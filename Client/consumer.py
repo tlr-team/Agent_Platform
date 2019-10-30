@@ -15,15 +15,15 @@ local.listen(100)
 while True:
     client, addr = local.accept()
     cp = socket(type = SOCK_STREAM)
-    msg = client.recv(2048)
+    msg = client.recv(8196)
     print(msg)
     cp.connect(server)
     cp.send(msg)
-    time = 60
-    while(time):
-        msgcp = cp.recv(2048)
+    msgcp = cp.recv(8196)
+    while(msgcp != b''):
         client.send(msgcp)
         print(msgcp)
+        msgcp = cp.recv(8196)
     cp.close()
     client.close()
 
