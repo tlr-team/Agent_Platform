@@ -1,0 +1,1 @@
+from .monolithic import MessaggeQueue
