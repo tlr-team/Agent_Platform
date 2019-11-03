@@ -53,12 +53,6 @@ print(producers)
 # Estado de la petición
 state = "Sin Terminar"
 
-# socket de servicio (local) "localhost:8000 para simplificar el acceso del cliente"
-local = socket(type = SOCK_STREAM)
-local.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
-local.bind(("127.0.0.1", Service_Port))
-local.listen(1)
-
 #Mientras hayan productores o no se haya terminado la petición del usuario intentar satisfacer el request
 while(len(producers) and state == "Sin Terminar"):
     address = producers.pop()
@@ -66,11 +60,31 @@ while(len(producers) and state == "Sin Terminar"):
     server = (address["ip"],address["port"])
     ConnectionType = address["stype"] # TCP o UDP
 
+
+    # socket de servicio (local) "localhost:8000 para simplificar el acceso del cliente"
+    local : socket
+
+    if ConnectionType == "tcp": 
+        local = socket(type = SOCK_STREAM)
+        local.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+        local.bind(("127.0.0.1", Service_Port))
+        local.listen(1)
+    else:
+        local = socket(type = SOCK_DGRAM)
+        local.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+        local.bind(("127.0.0.1", Service_Port))
+
+
     # Server que hace forwarding de las peticiones a la interfaz local al servidor agente
     while True:
-        client, addr = local.accept()
-        # recibir el pedido del socket local
-        msg = client.recv(1024)
+        msg : bytes
+        if ConnectionType == "tcp":
+            client, addr = local.accept()
+            # recibir el pedido del socket local
+            msg = client.recv(1024)
+        else:
+            msg, addr = local.recvfrom(1024)
+        
         # socket que se va a conectar al agente
         cp = socket(type = SOCK_STREAM) if ConnectionType == "tcp" else socket(type=SOCK_DGRAM)
 
@@ -85,10 +99,10 @@ while(len(producers) and state == "Sin Terminar"):
             cp.sendto(msg, server)
         
         # Leer la respuesta byte a byte para evitar problemas de bloqueo
-        msgcp = cp.recv(1) if ConnectionType == "tcp" else cp.recvfrom(1)[0]
+        msgcp = cp.recv(1) if ConnectionType == "tcp" else cp.recvfrom(1024)[0]
         while(msgcp != b''):
             # enviar la respuesta al socket que originalmente hizo el request a la interfaz local (localhost:8000)
-            client.send(msgcp)
+            client.send(msgcp) if ConnectionType == "tcp" else local.sendto(msgcp, addr)
             print(msgcp)
             # continuar leyendo
             msgcp = cp.recv(1) if ConnectionType == "tcp" else cp.recvfrom(1)[0]
@@ -96,3 +110,6 @@ while(len(producers) and state == "Sin Terminar"):
         # Cerrar los sockets tanto el remoto como el que responde a la petición local
         cp.close()
         client.close()
+        state = "Terminado"
+    
+    local.close()
