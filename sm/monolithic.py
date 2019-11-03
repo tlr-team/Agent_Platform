@@ -38,7 +38,7 @@ class ServicesManager:
                     'key': msg['key'],
                     'value': self.get_agents(msg['key']),
                 }), addr)
-                print('malformed pakage: ', msg)
+                print('pakage: ', msg)
             else:
                 print('malformed pakage: ', msg)
 
