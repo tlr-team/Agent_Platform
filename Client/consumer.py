@@ -1,5 +1,6 @@
 from config import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip
-from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM
+from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
+from time import sleep
 from json import dumps, loads
 
 # Estado del cliente 1, 2, 3
@@ -15,12 +16,23 @@ Resource = "A"
 # Tipo de connección al agente final (UDP / TCP)
 ConnectionType = "UDP"
 
+# Hacer pedido broadcast para detectar el server
+broadcast = socket(type = SOCK_DGRAM)
+broadcast.setsockopt(SOL_SOCKET, SO_BROADCAST, True)
+broadcast.sendto(b'Hello', ('192.168.2.255', 10001))
+msg, addr = broadcast.recvfrom(1024)
+result = loads(msg)
+print(result)
+
+exit()
 
 # socket de servicio (local) "localhost:8000 para simplificar el acceso del cliente"
 local = socket(type = SOCK_STREAM)
 local.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
-local.bind(('localhost', Service_Port))
 local.listen(1)
+local.bind(('localhost', Service_Port))
+
+
 
 # Server que hace forwarding de las peticiones a la interfaz local al servidor agente
 while True:
