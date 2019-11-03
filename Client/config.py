@@ -6,3 +6,4 @@ First_Run = False
 Service_Port = 8888
 Server_Ip = "190.92.127.83"
 Server_Port = 80
+Broadcast_Address = "192.168.2.31"
