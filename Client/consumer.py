@@ -49,23 +49,8 @@ def Get_request():
 # Lista de productores pedida
 producers = Get_request()
 
-
-# Estado del cliente 1, 2, 3
-state = 1
-
-# Dirección del servidor de la plataforma de agentes
-server = (Server_Ip,Server_Port)
-
-# Tipo de connección al agente final (UDP / TCP)
-ConnectionType = "UDP"
-
-# Hacer pedido broadcast para detectar el server
-broadcast = socket(type = SOCK_DGRAM)
-broadcast.setsockopt(SOL_SOCKET, SO_BROADCAST, True)
-broadcast.sendto(b'Hello', ('192.168.2.31', 10001))
-msg, addr = broadcast.recvfrom(1024)
-# msg es una lista de productores
-producers = loads(msg)
+# Estado de la petición
+state = "Sin Terminar"
 
 # socket de servicio (local) "localhost:8000 para simplificar el acceso del cliente"
 local = socket(type = SOCK_STREAM)
@@ -73,43 +58,41 @@ local.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
 local.listen(1)
 local.bind(('localhost', Service_Port))
 
-#while(len(producers)):
-#    candidate = producers.pop()
-#    server = (candidate["ip"],candidate["port"])
 
+#Mientras hayan productores o no se haya terminado la petición del usuario intentar satisfacer el request
+while(len(producers) or state == "Sin Terminar"):
+    address = producers.pop()
+    # Dirección del agente productor
+    server = (address["ip"],address["port"])
+    ConnectionType = address["stype"] # TCP o UDP
 
+    # Server que hace forwarding de las peticiones a la interfaz local al servidor agente
+    while True:
+        client, addr = local.accept()
+        # recibir el pedido del socket local
+        msg = client.recv(1024)
+        # socket que se va a conectar al agente
+        cp = socket(type = SOCK_STREAM) if ConnectionType == "TCP" else socket(type=SOCK_DGRAM)
 
+        msg : bytes
+        addr : tuple
 
-
-
-# Server que hace forwarding de las peticiones a la interfaz local al servidor agente
-while True:
-    client, addr = local.accept()
-    # socket que se va a conectar al agente
-    cp = socket(type = SOCK_STREAM) if ConnectionType == "TCP" else socket(type=SOCK_DGRAM)
-    # recibir el pedido del socket local
-    msg = client.recv(1024)
-    print(msg)
-    # enviar el request al productor (agente)
-    cp.connect(server)
-    cp.send(msg)
-    # Leer la respuesta byte a byte para evitar problemas de bloqueo
-    msgcp = cp.recv(1)
-    while(msgcp != b''):
-        # enviar la respuesta al socket que originalmente hizo el request a la interfaz local (localhost:8000)
-        client.send(msgcp)
-        print(msgcp)
-        # continuar leyendo
-        msgcp = cp.recv(1)
-    # Cerrar los sockets tanto el remoto como el que responde a la petición local
-    cp.close()
-    client.close()
-
-
-# def Get_Data(s):
-#     msg, addr = s.recvfrom(2048)
-#     producers = loads(msg)
-
-
-# def Connect_To_Cp(Cpip,cpport):
-
+        if ConnectionType == "TCP":
+            # enviar el request al productor (agente)
+            cp.connect(server)
+            cp.send(msg)
+        else:
+            cp.sendto(msg, server)
+        
+        # Leer la respuesta byte a byte para evitar problemas de bloqueo
+        msgcp = cp.recv(1) if ConnectionType == "TCP" else cp.recvfrom(1)[0]
+        while(msgcp != b''):
+            # enviar la respuesta al socket que originalmente hizo el request a la interfaz local (localhost:8000)
+            client.send(msgcp)
+            print(msgcp)
+            # continuar leyendo
+            msgcp = cp.recv(1) if ConnectionType == "TCP" else cp.recvfrom(1)[0]
+        
+        # Cerrar los sockets tanto el remoto como el que responde a la petición local
+        cp.close()
+        client.close()
