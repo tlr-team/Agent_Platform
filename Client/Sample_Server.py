@@ -15,5 +15,5 @@ while True:
     if to_do == "list":
         response = ["cubadebate", "test1", "test2"]
     elif to_do == "cubadebate":
-        response = [{ "ip":"192.168.2.7", "port":8000, "service":"discover", "protocol":"tcp" }] 
-    s.sendto(dumps(response),addr)
+        response = [{ "ip":"192.168.2.7", "port":8000, "service":"discover", "stype":"tcp" }] 
+    s.sendto(dumps(response).encode("utf-8"),addr)

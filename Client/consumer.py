@@ -10,6 +10,7 @@ def get_list():
     message = { "get":"list" }
     broadcast.sendto(dumps(message).encode("utf-8"), (Broadcast_Address, 10001))
     msg, addr = broadcast.recvfrom(1024)
+    broadcast.close()
     return loads(msg)
 
 # obtener la lista de servicios
@@ -24,7 +25,7 @@ def UI():
     total = len(service)
     user = 0
     while(not user):
-        user = int(input("Escriba el numero del Servicio"))
+        user = int(input("Escriba el numero del Servicio: "))
         if user >= 1 and user <= total:
             break
         else :
@@ -33,21 +34,21 @@ def UI():
 
 # Recurso buscado definido por el usuario
 user_choice = service_list[UI()-1]
-
-# Pedido a la plataforma
-request = { "get", user_choice }
+print("choice",user_choice)
 
 # Pedir el listado de posibles productores
 def Get_request():
     broadcast = socket(type = SOCK_DGRAM)
     broadcast.setsockopt(SOL_SOCKET, SO_BROADCAST, True)
-    message = { "get":request }
+    message = { "get": user_choice }
     broadcast.sendto(dumps(message).encode("utf-8"), (Broadcast_Address, 10001))
     msg, addr = broadcast.recvfrom(1024)
-    return loads(msg)
+    broadcast.close()
+    return loads(msg.decode("utf-8"))
 
 # Lista de productores pedida
 producers = Get_request()
+print(producers)
 
 # Estado de la petición
 state = "Sin Terminar"
@@ -55,12 +56,11 @@ state = "Sin Terminar"
 # socket de servicio (local) "localhost:8000 para simplificar el acceso del cliente"
 local = socket(type = SOCK_STREAM)
 local.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+local.bind(("127.0.0.1", Service_Port))
 local.listen(1)
-local.bind(('localhost', Service_Port))
-
 
 #Mientras hayan productores o no se haya terminado la petición del usuario intentar satisfacer el request
-while(len(producers) or state == "Sin Terminar"):
+while(len(producers) and state == "Sin Terminar"):
     address = producers.pop()
     # Dirección del agente productor
     server = (address["ip"],address["port"])
