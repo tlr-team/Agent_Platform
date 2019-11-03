@@ -10,7 +10,7 @@ def get_list():
     message = { "get":"list" }
     broadcast.sendto(dumps(message).encode("utf-8"), (Broadcast_Address, 10001))
     msg, addr = broadcast.recvfrom(1024)
-    return msg
+    return loads(msg)
 
 # obtener la lista de servicios
 service_list = get_list()
@@ -31,21 +31,31 @@ def UI():
             user = 0
     return user
 
-# Indexar la entrada del usuario
+# Recurso buscado definido por el usuario
 user_choice = service_list[UI()-1]
 
 # Pedido a la plataforma
 request = { "get", user_choice }
+
+# Pedir el listado de posibles productores
+def Get_request():
+    broadcast = socket(type = SOCK_DGRAM)
+    broadcast.setsockopt(SOL_SOCKET, SO_BROADCAST, True)
+    message = { "get":request }
+    broadcast.sendto(dumps(message).encode("utf-8"), (Broadcast_Address, 10001))
+    msg, addr = broadcast.recvfrom(1024)
+    return loads(msg)
+
+# Lista de productores pedida
+producers = Get_request()
+
 
 # Estado del cliente 1, 2, 3
 state = 1
 
 # Dirección del servidor de la plataforma de agentes
 server = (Server_Ip,Server_Port)
-# Lista de productores pedida
-producers = []
-# Recurso buscado definido por el usuario
-Resource = "A"
+
 # Tipo de connección al agente final (UDP / TCP)
 ConnectionType = "UDP"
 
