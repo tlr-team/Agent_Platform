@@ -2,12 +2,13 @@ import socket as sock
 from time import sleep
 from json import loads, dumps
 from threading import Thread, Semaphore
+from queue import Queue
 
 class MessaggeQueue:
     def __init__(self, port_reciever, port_reader):
         self.p_reciever, self.p_reader = port_reciever, port_reader
         self.sem = Semaphore()
-        self.queue = []
+        self.queue = Queue()
         
     def __call__(self, forever = False, time=3600):
         self.s_reciever = sock.socket(type=sock.SOCK_DGRAM)
@@ -36,11 +37,7 @@ class MessaggeQueue:
             if msg['type'] == 'consummer':
                 msg.update({'ip': addr[0], 'port': addr[1]})
 
-            self.sem.acquire()
-            print('\n'.join(str(m) for m in self.queue))
-            self.queue.insert(0, msg)
-            self.sem.release()
-        
+            self.queue.put(msg)        
 
     def _read(self):
         while True:
@@ -52,10 +49,9 @@ class MessaggeQueue:
                 continue
             print('request recieved from reader:', msg)
 
-            self.sem.acquire()
-            msg = self.queue.pop() if self.queue else {}
+            msg = self.queue.get() if self.queue else {}
             print(self.queue)
-            self.sem.release()
+            
             self.s_reader.sendto(dumps(msg).encode(), addr)
 
 def main_test():
