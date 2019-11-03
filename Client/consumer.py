@@ -12,12 +12,34 @@ def get_list():
     msg, addr = broadcast.recvfrom(1024)
     return msg
 
+# obtener la lista de servicios
+service_list = get_list()
 
+# Método de interacción con el usuario
+def UI():
+    print("Bienvenido a la plataforma de agentes LR")
+    print("Por favor seleccione el tipo de servicio al que se desea conectar:")
+    for i,service in enumerate(service_list):
+        print(f'[{i+1}] : {service}')
+    total = len(service)
+    user = 0
+    while(not user):
+        user = int(input("Escriba el numero del Servicio"))
+        if user >= 1 and user <= total:
+            break
+        else :
+            user = 0
+    return user
+
+# Indexar la entrada del usuario
+user_choice = service_list[UI()-1]
+
+# Pedido a la plataforma
+request = { "get", user_choice }
 
 # Estado del cliente 1, 2, 3
 state = 1
-# Pedido a la plataforma
-request = {}
+
 # Dirección del servidor de la plataforma de agentes
 server = (Server_Ip,Server_Port)
 # Lista de productores pedida
