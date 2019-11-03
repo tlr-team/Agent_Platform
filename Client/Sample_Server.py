@@ -10,5 +10,6 @@ s.bind(('', 10001))
 while True:
     msg, addr = s.recvfrom(1024)
     print(msg, "from", addr)
-    response = [{ "IP":"192.168.2.7", "Port":8000, "Service":"Discover", "Protocol":"TCP" }]
+    response = [{ "IP":"192.168.2.7", "Port":8000, "Service":"Discover", "Protocol":"TCP" }] 
+    # FIXME: Robe tu mismo dijiste q todo con minuscula cambia esa respuesta
     s.sendto(dumps(response),addr)
