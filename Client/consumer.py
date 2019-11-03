@@ -1,7 +1,18 @@
-from config import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip
+from config import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip, Broadcast_Address
 from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
 from time import sleep
 from json import dumps, loads
+
+# hacer un pedido broadcast para determinar la lista de los servicios:
+def get_list():
+    broadcast = socket(type = SOCK_DGRAM)
+    broadcast.setsockopt(SOL_SOCKET, SO_BROADCAST, True)
+    message = { "get":"list" }
+    broadcast.sendto(dumps(message).encode("utf-8"), (Broadcast_Address, 10001))
+    msg, addr = broadcast.recvfrom(1024)
+    return msg
+
+
 
 # Estado del cliente 1, 2, 3
 state = 1
@@ -19,18 +30,23 @@ ConnectionType = "UDP"
 # Hacer pedido broadcast para detectar el server
 broadcast = socket(type = SOCK_DGRAM)
 broadcast.setsockopt(SOL_SOCKET, SO_BROADCAST, True)
-broadcast.sendto(b'Hello', ('192.168.2.255', 10001))
+broadcast.sendto(b'Hello', ('192.168.2.31', 10001))
 msg, addr = broadcast.recvfrom(1024)
-result = loads(msg)
-print(result)
-
-exit()
+# msg es una lista de productores
+producers = loads(msg)
 
 # socket de servicio (local) "localhost:8000 para simplificar el acceso del cliente"
 local = socket(type = SOCK_STREAM)
 local.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
 local.listen(1)
 local.bind(('localhost', Service_Port))
+
+#while(len(producers)):
+#    candidate = producers.pop()
+#    server = (candidate["ip"],candidate["port"])
+
+
+
 
 
 
@@ -64,3 +80,4 @@ while True:
 
 
 # def Connect_To_Cp(Cpip,cpport):
+
