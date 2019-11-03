@@ -72,12 +72,12 @@ while(len(producers) or state == "Sin Terminar"):
         # recibir el pedido del socket local
         msg = client.recv(1024)
         # socket que se va a conectar al agente
-        cp = socket(type = SOCK_STREAM) if ConnectionType == "TCP" else socket(type=SOCK_DGRAM)
+        cp = socket(type = SOCK_STREAM) if ConnectionType == "tcp" else socket(type=SOCK_DGRAM)
 
         msg : bytes
         addr : tuple
 
-        if ConnectionType == "TCP":
+        if ConnectionType == "tcp":
             # enviar el request al productor (agente)
             cp.connect(server)
             cp.send(msg)
@@ -85,13 +85,13 @@ while(len(producers) or state == "Sin Terminar"):
             cp.sendto(msg, server)
         
         # Leer la respuesta byte a byte para evitar problemas de bloqueo
-        msgcp = cp.recv(1) if ConnectionType == "TCP" else cp.recvfrom(1)[0]
+        msgcp = cp.recv(1) if ConnectionType == "tcp" else cp.recvfrom(1)[0]
         while(msgcp != b''):
             # enviar la respuesta al socket que originalmente hizo el request a la interfaz local (localhost:8000)
             client.send(msgcp)
             print(msgcp)
             # continuar leyendo
-            msgcp = cp.recv(1) if ConnectionType == "TCP" else cp.recvfrom(1)[0]
+            msgcp = cp.recv(1) if ConnectionType == "tcp" else cp.recvfrom(1)[0]
         
         # Cerrar los sockets tanto el remoto como el que responde a la petición local
         cp.close()
