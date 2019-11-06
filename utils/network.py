@@ -25,3 +25,11 @@ def Send_Broadcast_Message(message, function, Broadcast_Address, Broadcast_Port)
     result = function(broadcast)
     broadcast.close()
     return result
+
+#Codifica un diccionario en forma json para sen enviado por la red
+def Encode_Request(dicc):
+    return dumps(dicc).encode("utf-8")
+
+#Decodifica la respusta en forma de json a un diccionario python
+def Decode_Response(data):
+    return loads(data)
