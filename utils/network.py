@@ -33,3 +33,14 @@ def Encode_Request(dicc):
 #Decodifica la respusta en forma de json a un diccionario python
 def Decode_Response(data):
     return loads(data)
+
+def Ip_To_Binary(ip):
+    octet_list = ip.split(".")
+    octet_list_bin = [format(int(i),'08b') for i in octet_list]
+    binary = ("").join(octet_list_bin)
+    return binary
+
+def Get_Subnet_Host_Number(ip,mask):
+    ip_bin = Ip_To_Binary(ip)
+    host = ip_bin[mask:]
+    return int(host)
