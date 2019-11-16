@@ -1,6 +1,8 @@
 from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
 from time import sleep
 from json import dumps, loads
+from threading import Thread,Semaphore
+from inspect import signature
 
 # decorador que reintenta una función si esta da error cada seconds cantidad de tiempo
 def Retry(seconds):
@@ -55,31 +57,34 @@ def Get_Subnet_Host_Number(ip,mask):
 
 #Clase para el algoritmo de descubrimiento
 class Discovering:
-    def __init__(self, port):
+    def __init__(self, port,broadcast_addr,time = 10):
         self.partners = []
         self.port = port
-        #FIXME mutex
+        self.b_addr = broadcast_addr
+        self.mutex = Semaphore()
+        self.time = time
         self.socket = socket(type = SOCK_DGRAM)
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
         self.socket.bind(('', port))
 
     def start(self):
-        #Empezar el keep Alive
+        Thread(target=self._write, args=(self,),daemon=True).start()
         while True:
             msg, addr = self.socket.recvfrom(2048)
-            #FIXME Empezar el hilo
+            Thread(target=self._listen, args=(self,addr[0],),daemon=True).start()
            
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
-    def _listen(self):
-        addr = (1,1) #FIXME recordar como pasar argumentos a los hilos
-        ip = addr[0]
+    def _listen(self,ip):
         #FIXME hacer lock
         if ip not in self.partners:
+            self.mutex.acquire()
             self.partners.append(ip)
+            self.mutex.release()
 
     # Hilo que va a enviar cada cierto tiempo definido un mensaje broadcast para decir que esta vivo
     def _write(self):
-        while True:  
-            pass
+        while True:
+            Send_Broadcast_Message("Hello",self.b_addr,self.port,)
+            sleep(self.time)
     
 
