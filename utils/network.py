@@ -16,9 +16,13 @@ def Retry(seconds):
         return wrapper
     return FReciever
 
+# Funcion por defecto si no se quiere procesar el mesaje broadcast
+def Void(socket):
+    pass
+
 # Función que envia un mensaje (en bytes) mediante  broadcast y devuelve el resultado de una función a la que se le pasa el socket
 # Esta función no falla dado que siempre va a existir una interfaz a la cual entregar el socket, el manejo de errores se delega en la función a aplicar
-def Send_Broadcast_Message(message, function, Broadcast_Address, Broadcast_Port):
+def Send_Broadcast_Message(message, Broadcast_Address, Broadcast_Port, function = Void):
     broadcast = socket(type = SOCK_DGRAM)
     broadcast.setsockopt(SOL_SOCKET, SO_BROADCAST, True)
     broadcast.sendto(message, (Broadcast_Address, Broadcast_Port))
