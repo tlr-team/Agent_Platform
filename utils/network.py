@@ -58,7 +58,7 @@ def Get_Subnet_Host_Number(ip,mask):
 #Clase para el algoritmo de descubrimiento
 class Discovering:
     def __init__(self, port,broadcast_addr,time = 10):
-        self.partners = []
+        self.partners = {}
         self.port = port
         self.b_addr = broadcast_addr
         self.mutex = Semaphore()
@@ -71,20 +71,27 @@ class Discovering:
         Thread(target=self._write,daemon=True).start()
         while True:
             msg, addr = self.socket.recvfrom(2048)
-            Thread(target=self._listen, args=(addr[0]),daemon=True).start()
+            Thread(target=self._listen, args=(addr[0],),daemon=True).start()
            
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
     def _listen(self,ip):
-        #FIXME hacer lock
         if ip not in self.partners:
             self.mutex.acquire()
-            self.partners.append(ip)
+            self.partners[ip] = 3
             self.mutex.release()
 
     # Hilo que va a enviar cada cierto tiempo definido un mensaje broadcast para decir que esta vivo
     def _write(self):
         while True:
             Send_Broadcast_Message("Hello",self.b_addr,self.port,)
+            self.mutex.acquire()
+            temp = {}
+            for name,val in self.partners.items():
+                if val > 1:
+                    temp[name] = val-1
+            self.partners = temp
+            print(self.partners)
+            self.mutex.release()
             sleep(self.time)
     
 
