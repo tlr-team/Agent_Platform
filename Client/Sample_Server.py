@@ -13,7 +13,9 @@ while True:
     to_do = loads(msg)["get"]
     response = []
     if to_do == "list":
-        response = ["cubadebate", "test1", "test2"]
+        response = ["cubadebate", "dns", "test2"]
     elif to_do == "cubadebate":
-        response = [{ "ip":"192.168.2.7", "port":8000, "service":"discover", "stype":"tcp" }] 
+        response = [{ "ip":"190.92.127.78", "port":80, "service":"discover", "stype":"tcp" }]
+    elif to_do == "dns":
+        response = [{ "ip":"192.168.1.1", "port":53, "service":"dns", "stype":"udp" }] 
     s.sendto(dumps(response).encode("utf-8"),addr)
