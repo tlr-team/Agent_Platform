@@ -14,7 +14,7 @@ def get_list(broadcast):
     return Decode_Response(msg)
 
 # obtener la lista de servicios
-service_list = Send_Broadcast_Message(get_list_message,get_list,get_list_addr,get_list_port)
+service_list = Send_Broadcast_Message(get_list_message,get_list_addr,get_list_port,get_list)
 
 # Método de interacción con el usuario
 def UI():
@@ -46,7 +46,7 @@ def Get_request(broadcast):
     return Decode_Response(msg)
 
 # Lista de productores pedida
-producers = Send_Broadcast_Message(get_request_message, Get_request, get_request_addr, get_request_port)
+producers = Send_Broadcast_Message(get_request_message, get_request_addr, get_request_port,Get_request)
 print(producers)
 
 # Estado de la petición
