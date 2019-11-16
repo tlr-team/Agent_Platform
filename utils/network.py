@@ -46,3 +46,36 @@ def Get_Subnet_Host_Number(ip,mask):
     ip_bin = Ip_To_Binary(ip)
     host = ip_bin[mask:]
     return int(host)
+
+#FIXME aplicar hilos para concurrencia y un lock
+
+#Clase para el algoritmo de descubrimiento
+class Discovering:
+    def __init__(self, port):
+        self.partners = []
+        self.port = port
+        #FIXME mutex
+        self.socket = socket(type = SOCK_DGRAM)
+        self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+        self.socket.bind(('', port))
+
+    def start(self):
+        #Empezar el keep Alive
+        while True:
+            msg, addr = self.socket.recvfrom(2048)
+            #FIXME Empezar el hilo
+           
+    # Hilo que va a recibir el mensaje de broadcast y procesarlo
+    def _listen(self):
+        addr = (1,1) #FIXME recordar como pasar argumentos a los hilos
+        ip = addr[0]
+        #FIXME hacer lock
+        if ip not in self.partners:
+            self.partners.append(ip)
+
+    # Hilo que va a enviar cada cierto tiempo definido un mensaje broadcast para decir que esta vivo
+    def _write(self):
+        while True:  
+            pass
+    
+
