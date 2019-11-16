@@ -27,7 +27,7 @@ def Void(socket):
 def Send_Broadcast_Message(message, Broadcast_Address, Broadcast_Port, function = Void):
     broadcast = socket(type = SOCK_DGRAM)
     broadcast.setsockopt(SOL_SOCKET, SO_BROADCAST, True)
-    broadcast.sendto(message, (Broadcast_Address, Broadcast_Port))
+    broadcast.sendto(Encode_Request(message), (Broadcast_Address, Broadcast_Port))
     result = function(broadcast)
     broadcast.close()
     return result
@@ -68,10 +68,10 @@ class Discovering:
         self.socket.bind(('', port))
 
     def start(self):
-        Thread(target=self._write, args=(self,),daemon=True).start()
+        Thread(target=self._write,daemon=True).start()
         while True:
             msg, addr = self.socket.recvfrom(2048)
-            Thread(target=self._listen, args=(self,addr[0],),daemon=True).start()
+            Thread(target=self._listen, args=(addr[0]),daemon=True).start()
            
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
     def _listen(self,ip):
