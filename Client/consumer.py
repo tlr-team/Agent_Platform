@@ -1,20 +1,20 @@
 from config import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip, Broadcast_Address
 from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
 from time import sleep
-from json import dumps, loads
+from network import Send_Broadcast_Message, Encode_Request, Decode_Response, Retry
 
 # hacer un pedido broadcast para determinar la lista de los servicios:
-def get_list():
-    broadcast = socket(type = SOCK_DGRAM)
-    broadcast.setsockopt(SOL_SOCKET, SO_BROADCAST, True)
-    message = { "get":"list" }
-    broadcast.sendto(dumps(message).encode("utf-8"), (Broadcast_Address, 10001))
+get_list_message = Encode_Request({ "get":"list" })
+get_list_addr = Broadcast_Address
+get_list_port = 10001
+
+@Retry(4,"Fallo al obtener petición remota, reintentando")
+def get_list(broadcast):
     msg, addr = broadcast.recvfrom(1024)
-    broadcast.close()
-    return loads(msg)
+    return Decode_Response(msg)
 
 # obtener la lista de servicios
-service_list = get_list()
+service_list = Send_Broadcast_Message(get_list_message,get_list_addr,get_list_port,get_list)
 
 # Método de interacción con el usuario
 def UI():
@@ -36,18 +36,17 @@ def UI():
 user_choice = service_list[UI()-1]
 print("choice",user_choice)
 
+get_request_message = Encode_Request({ "get": user_choice })
+get_request_addr = get_list_addr
+get_request_port = get_list_port
+
 # Pedir el listado de posibles productores
-def Get_request():
-    broadcast = socket(type = SOCK_DGRAM)
-    broadcast.setsockopt(SOL_SOCKET, SO_BROADCAST, True)
-    message = { "get": user_choice }
-    broadcast.sendto(dumps(message).encode("utf-8"), (Broadcast_Address, 10001))
+def Get_request(broadcast):
     msg, addr = broadcast.recvfrom(1024)
-    broadcast.close()
-    return loads(msg.decode("utf-8"))
+    return Decode_Response(msg)
 
 # Lista de productores pedida
-producers = Get_request()
+producers = Send_Broadcast_Message(get_request_message, get_request_addr, get_request_port,Get_request)
 print(producers)
 
 # Estado de la petición
