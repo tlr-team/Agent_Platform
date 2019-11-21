@@ -1,4 +1,4 @@
-from .network import Discovering
+from network import Discovering
 
 d = Discovering(10002,"10.10.10.255")
 

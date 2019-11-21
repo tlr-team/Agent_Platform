@@ -1,36 +1,20 @@
-from producer_options import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip
+from .producer_options import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip
 from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR,SOCK_STREAM
-from json import dumps, loads
+from utils.network import Encode_Request, Decode_Response
+from pathlib import Path
+from yaml import load, FullLoader
 
 server = (Server_Ip,Server_Port)
 producers = []
 
-Resource = "A"
+agents = []
 
-local = socket(type = SOCK_STREAM)
-local.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
-local.bind(('localhost', Service_Port))
-local.listen(100)
+agent_directory = Path('/home/Agent')
 
-while True:
-    client, addr = local.accept()
-    cp = socket(type = SOCK_STREAM)
-    msg = client.recv(1024)
-    print(msg)
-    cp.connect(server)
-    cp.send(msg)
-    msgcp = cp.recv(1)
-    while(msgcp != b''):
-        client.send(msgcp)
-        print(msgcp)
-        msgcp = cp.recv(1)
-    cp.close()
-    client.close()
+for agent_config in agent_directory.iterdir():
+    if agent_config.suffix == '.agent':
+        with agent_config.open() as config:
+            agents.append(load(config,FullLoader))
 
-
-# def Get_Data(s):
-#     msg, addr = s.recvfrom(2048)
-#     producers = loads(msg)
-
-
-# def Connect_To_Cp(Cpip,cpport):
+print(agents)
+            
