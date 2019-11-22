@@ -4,25 +4,28 @@ from json import loads, dumps
 from threading import Thread, Semaphore
 from queue import Queue
 
+
 class MessaggeQueue:
     def __init__(self, port_reciever, port_reader):
         self.p_reciever, self.p_reader = port_reciever, port_reader
         self.sem = Semaphore()
         self.queue = Queue()
-        
-    def __call__(self, forever = False, time=3600):
+
+    def __call__(self, forever=False, time=3600):
         self.s_reciever = sock.socket(type=sock.SOCK_DGRAM)
         self.s_reciever.setsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR, True)
-        self.s_reciever.bind(('localhost', self.p_reciever)) #FIXME: Cambiar puerto
+        self.s_reciever.bind(('localhost', self.p_reciever))  # FIXME: Cambiar puerto
 
         self.s_reader = sock.socket(type=sock.SOCK_DGRAM)
         self.s_reader.setsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR, True)
-        self.s_reader.bind(('localhost', self.p_reader)) #FIXME: Cambiar puerto
-        print(f'socket for recieve messages:{self.p_reciever}\nsocket for get messages:{self.p_reader}')
-        
+        self.s_reader.bind(('localhost', self.p_reader))  # FIXME: Cambiar puerto
+        print(
+            f'socket for recieve messages:{self.p_reciever}\nsocket for get messages:{self.p_reader}'
+        )
+
         Thread(target=self._recieve, daemon=True).start()
         Thread(target=self._read, daemon=True).start()
-        
+
         while True:
             sleep(5)
             pass
@@ -32,12 +35,12 @@ class MessaggeQueue:
             print('ready for reciever...')
             rawmsg, addr = self.s_reciever.recvfrom(2048)
             msg = loads(rawmsg)
-            print('arrive:', msg,'from:', addr)
-            
+            print('arrive:', msg, 'from:', addr)
+
             if msg['type'] == 'consummer':
                 msg.update({'ip': addr[0], 'port': addr[1]})
 
-            self.queue.put(msg)        
+            self.queue.put(msg)
 
     def _read(self):
         while True:
@@ -51,13 +54,15 @@ class MessaggeQueue:
 
             msg = self.queue.get() if self.queue else {}
             print(self.queue)
-            
+
             self.s_reader.sendto(dumps(msg).encode(), addr)
+
 
 def main_test():
     mq = MessaggeQueue(8081, 8082)
     mq()
 
+
 if __name__ == "__main__":
     main_test()
-    
+
