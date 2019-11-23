@@ -10,7 +10,7 @@ class Contact:
     def __init__(self, protocol, contact_id):
         self.last_seen: datetime = None
         self.protocol = protocol
-        self.contact_id = contact_id
+        self.id = contact_id
         self.touch()
 
     def touch(self):
