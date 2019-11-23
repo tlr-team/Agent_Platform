@@ -3,6 +3,7 @@ from time import sleep
 from json import loads, dumps
 from threading import Thread, Semaphore
 from queue import Queue
+from utlis.network import Decode_Response,Encode_Request
 
 
 class MessaggeQueue:
@@ -30,11 +31,14 @@ class MessaggeQueue:
             sleep(5)
             pass
 
+    #FIXME de verdad hace falta un semaforo aca ?
+
+    #hilo que se encarga de procesar los pedidos de los clientes
     def _recieve(self):
         while True:
             print('ready for reciever...')
             rawmsg, addr = self.s_reciever.recvfrom(2048)
-            msg = loads(rawmsg)
+            msg = Decode_Response(rawmsg)
             print('arrive:', msg, 'from:', addr)
 
             if msg['type'] == 'consummer':
@@ -42,11 +46,12 @@ class MessaggeQueue:
 
             self.queue.put(msg)
 
+    #Hilo que se encarga de procesar los pedidos hacia los routers
     def _read(self):
         while True:
             print('ready for reader...')
             rawmsg, addr = self.s_reader.recvfrom(128)
-            msg = loads(rawmsg)
+            msg = Decode_Response(rawmsg)
             if msg != 'get':
                 print(f'wierd petition from addr {addr}.')
                 continue
@@ -55,7 +60,7 @@ class MessaggeQueue:
             msg = self.queue.get() if self.queue else {}
             print(self.queue)
 
-            self.s_reader.sendto(dumps(msg).encode(), addr)
+            self.s_reader.sendto(Encode_Request(msg), addr)
 
 
 def main_test():
