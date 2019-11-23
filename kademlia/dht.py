@@ -20,7 +20,7 @@ class Id(int):
         return self.__intValue
 
     @value.setter
-    def set_value(self, value):
+    def value(self, value):
         if (
             isinstance(value, bytes)
             and (not value.isdigit() or len(value) != ID_LENGTH_BYTES)
