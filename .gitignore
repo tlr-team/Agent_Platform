@@ -1,4 +1,5 @@
  
 .directory
 __pycache__/
-Test/
+test/
+test*.py
