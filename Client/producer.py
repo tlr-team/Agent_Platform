@@ -7,14 +7,18 @@ from yaml import load, FullLoader
 server = (Server_Ip,Server_Port)
 producers = []
 
-agents = []
+def load_config(path, format = '.agent'):
+    #Directorio donde se encentran las planillas de los agentes
+    agent_directory = Path(path)
 
-agent_directory = Path('/home/Agent')
+    #Listado de agentes en la carpeta de configuracion
+    agents = []
 
-for agent_config in agent_directory.iterdir():
-    if agent_config.suffix == '.agent':
-        with agent_config.open() as config:
-            agents.append(load(config,FullLoader))
+    for agent_config in agent_directory.iterdir():
+        if agent_config.suffix == format:
+            with agent_config.open() as config:
+                #cada planilla esta en formato yaml
+                agents.append(load(config,FullLoader))
 
-print(agents)
+    return agents
             
