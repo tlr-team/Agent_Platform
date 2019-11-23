@@ -1,5 +1,7 @@
  
 .directory
 __pycache__/
+test/
+test*.py
 Test/
 main.py

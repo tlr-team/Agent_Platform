@@ -10,12 +10,7 @@ s = sock.socket(type=sock.SOCK_DGRAM)
 s.setsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR, True)
 addr = ('localhost', 8081)
 
-petition = {
-    'id': 1,
-    'type': 'consummer',
-    'resource': 'A',
-    'fails':[]
-}
+petition = {'id': 1, 'type': 'consummer', 'resource': 'A', 'fails': []}
 
 while True:
     s.sendto(dumps(petition).encode(), addr)
