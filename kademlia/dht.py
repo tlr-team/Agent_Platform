@@ -22,6 +22,24 @@ class Id(int):
     def __init__(self, value):
         self.value = value
 
+    def to_str(self, endian='little'):
+        '''
+        `endian`='little' o 'big'
+        '''
+        byts = ['0' * 8]  # force a positive number
+        r = self.value
+
+        while r != 0:
+            if endian is 'little':
+                byts.insert(-1, bin(r & 255)[2:].rjust(8, '0'))
+            else:
+                byts.insert(1, bin(r & 255)[2:].rjust(8, '0'))
+            r >>= 8
+        return ''.join(byts)
+
+    def to_boolean(self, endian='little'):
+        return [b == '1' for b in self.to_str(endian=endian)]
+
     @property
     def value(self):
         return self.__intValue
