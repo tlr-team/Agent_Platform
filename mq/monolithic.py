@@ -31,8 +31,6 @@ class MessaggeQueue:
             sleep(5)
             pass
 
-    #FIXME de verdad hace falta un semaforo aca ?
-
     #hilo que se encarga de procesar los pedidos de los clientes
     def _recieve(self):
         while True:
@@ -44,6 +42,7 @@ class MessaggeQueue:
             if msg['type'] == 'consummer':
                 msg.update({'ip': addr[0], 'port': addr[1]})
 
+            #FIXME hacer lock del semaforo
             self.queue.put(msg)
 
     #Hilo que se encarga de procesar los pedidos hacia los routers
@@ -57,6 +56,7 @@ class MessaggeQueue:
                 continue
             print('request recieved from reader:', msg)
 
+            #fixme hacer lock del semaforo
             msg = self.queue.get() if self.queue else {}
             print(self.queue)
 
