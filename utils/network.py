@@ -72,6 +72,11 @@ def Tcp_Message(msg,ip,port):
         sock.send(Encode_Request(req))
         return Sock_Reader(sock)
 
+#Envia un mensaje udp 
+def Upd_Message(msg,ip,port):
+    with socket(type = SOCK_DGRAM) as sock:
+        sock.sendto(Encode_Request(msg),(ip,port))
+
 #FIXME aplicar hilos para concurrencia y un lock
 
 #Clase para el algoritmo de descubrimiento
