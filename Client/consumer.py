@@ -1,7 +1,7 @@
 from config import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip, Broadcast_Address
 from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
 from time import sleep
-from network import Send_Broadcast_Message, Encode_Request, Decode_Response, Retry
+from utils.network import Send_Broadcast_Message, Encode_Request, Decode_Response, Retry
 from threading import Thread,Semaphore
 
 # hacer un pedido broadcast para determinar la lista de los servicios:
