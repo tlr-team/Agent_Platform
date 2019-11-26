@@ -3,6 +3,7 @@ from time import sleep
 from json import dumps, loads
 from threading import Thread,Semaphore
 from inspect import signature
+from io import BytesIO
 
 # decorador que reintenta una función si esta da error cada seconds cantidad de tiempo
 def Retry(seconds):
@@ -52,6 +53,24 @@ def Get_Subnet_Host_Number(ip,mask):
     ip_bin = Ip_To_Binary(ip)
     host = ip_bin[mask:]
     return int(host)
+
+#Recive un socket TCP y devuelve el resultado de leer todo el contenido del mismo
+def Sock_Reader(socket):
+    result = None
+    with BytesIO() as buf:
+        msg = socket.recv(1)
+        while(msg != b''):
+            buf.write(msg)
+            msg = socket.recv(1)
+        result = Decode_Response(buf.getvalue())
+    return result
+
+#Envia un mensaje tcp y devuelve la respuesta
+def Tcp_Message(msg,ip,port):
+    with socket(type= SOCK_STREAM) as sock:
+        sock.connect((ip,port))
+        sock.send(Encode_Request(req))
+        return Sock_Reader(sock)
 
 #FIXME aplicar hilos para concurrencia y un lock
 
