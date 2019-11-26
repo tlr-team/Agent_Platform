@@ -14,12 +14,12 @@ class ServicesManager:
         self.sock.bind(('localhost', 9347))
         self.sock.listen(1024)
 
-    def add_agent(self, key, value):
-        if key in self.services:
-            self.services[key][0].append(value)
-            self.services[key] = (self.services[key][0], datetime.now())
+    def add_agent(self, service, agent):
+        if service in self.services:
+            self.services[service][0].append(agent)
+            self.services[service] = (self.services[service][0], datetime.now())
         else:
-            self.services[key] = ([value], datetime.now())
+            self.services[service] = ([agent], datetime.now())
 
     def remove_forgotten(self):
         now = datetime.now()
@@ -40,7 +40,7 @@ class ServicesManager:
             if 'get' in msg:
                 if msg['get'] == 'list':
                     self.get_list_h(msg, client)
-                if msg['get'] == 'agents':
+                else:
                     self.get_agents_h(msg, client)
             elif 'post' in msg:
                 self.post_service_h(msg, client)
@@ -52,32 +52,24 @@ class ServicesManager:
         '''
         Handler request that send an agent list from a given service.
         '''
-        c_sock.send(dumps({'value': list(self.services.keys())}))
+        c_sock.send(dumps(list(self.services.keys())).encode())
         print('pakage: ', msg)
 
     def get_agents_h(self, msg, c_sock):
         '''
         Handler request that send an agent list from a given service.  
         '''
-        if 'key' in msg:
-            c_sock.send(
-                dumps(
-                    {'key': msg['key'], 'value': self.get_agents(msg['key'])}
-                ).encode()
-            )
-            print('pakage: ', msg)
-        else:
-            print('malformed pakage: ', msg)
+        c_sock.send(dumps(list(self.get_agents(msg['get']))).encode())
+        print('pakage: ', msg)
 
     def post_service_h(self, msg, c_sock):
         '''
         Handler request that recieve and store an agent info in the given service.  
         '''
-        if 'key' in msg and 'value' in msg:
-            self.add_agent(msg['key'], msg['value'])
-            print('pakage: ', msg)
-        else:
-            print('malformed pakage: ', msg)
+        self.add_agent(
+            msg['post'], (msg['ip'], msg['port'], msg['url'], msg['protocol'])
+        )
+        print('pakage: ', msg)
 
 
 if __name__ == "__main__":

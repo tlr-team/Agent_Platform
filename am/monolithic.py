@@ -14,8 +14,8 @@ class AgentManager:
         self.sock.bind(('localhost', 9347))
         self.sock.listen(1024)
 
-    def add_agent(self, key, value):
-        self.agents[key] = (value, datetime.now())
+    def add_agent(self, agent, service):
+        self.agents[agent] = (service, datetime.now())
 
     def remove_forgotten(self):
         now = datetime.now()
@@ -39,7 +39,7 @@ class AgentManager:
             if 'get' in msg:
                 if msg['get'] == 'full_list':
                     self.get_full_list_h(msg, client)
-                if msg['get'] == 'resource':
+                else:
                     self.get_service_h(msg, client)
             elif 'post' in msg:
                 self.post_service_h(msg, client)
@@ -51,32 +51,28 @@ class AgentManager:
         '''
         Handler request that recieve and store an agent-service info.  
         '''
-        if 'key' in msg and 'value' in msg:
-            self.add_agent(msg['key'], msg['value'])
-            print('pakage: ', msg)
-        else:
-            print('malformed pakage: ', msg)
+        self.add_agent(
+            (msg['ip'], msg['port'], msg['url'], msg['protocol']), msg['post']
+        )
+        print('pakage: ', msg)
 
     def get_full_list_h(self, msg, c_sock):
         '''
         Handler request that send the full list of agents.  
         '''
-        c_sock.send(dumps({'value': self.get_all_agents()}).encode())
+        c_sock.send(dumps(list(self.agents.items())).encode())
         print('pakage: ', msg)
 
     def get_service_h(self, msg, c_sock):
         '''
         Handler request that send a service for a given agent.  
         '''
-        if 'key' in msg:
-            c_sock.send(
-                dumps(
-                    {'key': msg['key'], 'value': self.get_service(msg['key'])}
-                ).encode()
-            )
-            print('pakage: ', msg)
-        else:
-            print('malformed pakage: ', msg)
+        c_sock.send(
+            dumps(
+                self.get_service((msg['ip'], msg['port'], msg['url'], msg['protocol']))
+            ).encode()
+        )
+        print('pakage: ', msg)
 
 
 if __name__ == "__main__":
