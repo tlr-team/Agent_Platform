@@ -3,7 +3,7 @@ from time import sleep
 from json import loads, dumps
 from threading import Thread, Semaphore
 from queue import Queue
-from utils.network import Decode_Response,Encode_Request,Send_Broadcast_Message,Sock_Reader,Tcp_Message
+from utils.network import Decode_Response,Encode_Request,Send_Broadcast_Message,Sock_Reader,Tcp_Message,Udp_Message
 from io import BytesIO
 
 # Funcionamiento del Router:
@@ -19,6 +19,9 @@ class Router:
         self.mutex = Semaphore()
         self.Broadcast_Address = ""
         self.Broadcast_Port = 8900
+        self.am_ip = ""
+        self.sm_ip = ""
+        self.bd_port = 10003
         Thread(target=self._recieve,deamon=True).start()
         Thread(target=self._resolve,deamon=True).start()
 
@@ -47,11 +50,23 @@ class Router:
                 req = self.channel.pop()
                 self.mutex.release() 
                 # Pedido desde un cliente
-                if "get" in req.keys():
-                    pass
+                if "get" in req:
+                    ip = req["ip"]
+                    port = req["port"]
+                    info = req["get"]
+                    msg = {"get",info}
+                    response = None
+                    if info == "full_list":
+                        response = Tcp_Message(msg,am_ip,self.bd_port)
+                    else:
+                        response = Tcp_Message(msg,sm_ip,self.bd_port)
+                    #Enviar la respuesta
+                    Udp_Message(response,ip,port)
+                    
                 # Pedido desde un productor
                 else:
-                    #FIXME encapsular el metodo de comunicarse
-                    Tcp_Message(req,"10.10.10.5",10003)
-                pass
+                    #Mandar el update a la bd1
+                    #Mandar el update a la bd2
+                    Tcp_Message(req,self.am_ip,self.bd_port)
+                    Tcp_Message(req,self.sm_ip,self.bd_port)
             
