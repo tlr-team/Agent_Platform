@@ -1,9 +1,23 @@
-from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
+from socket import (
+    socket,
+    SOCK_DGRAM,
+    SOL_SOCKET,
+    SO_REUSEADDR,
+    SOCK_STREAM,
+    SO_BROADCAST,
+)
 from time import sleep
 from json import loads, dumps
 from threading import Thread, Semaphore
 from queue import Queue
-from network import Decode_Response,Encode_Request,Send_Broadcast_Message,Sock_Reader,Tcp_Message,Udp_Message
+from utils.network import (
+    Decode_Response,
+    Encode_Request,
+    Send_Broadcast_Message,
+    Sock_Reader,
+    Tcp_Message,
+    Udp_Message,
+)
 from io import BytesIO
 
 # Funcionamiento del Router:
@@ -15,9 +29,8 @@ def Get_UdpMessage(socket):
 
 # Clase base para el router
 class Router:
-
     def __init__(self):
-        #mutex 
+        # mutex
         self.channel = []
         self.mutex = Semaphore()
         self.Broadcast_Address = "10.10.10.255"
@@ -52,12 +65,12 @@ class Router:
         while(True):
             self.mutex.acquire()
             if not len(self.channel):
-                self.mutex.release() 
+                self.mutex.release()
                 sleep(5)
             else:
                 print('channel',self.channel)
                 req = self.channel.pop()
-                self.mutex.release() 
+                self.mutex.release()
                 # Pedido desde un cliente
                 if "get" in req:
                     ip = req["ip"]

@@ -1,6 +1,7 @@
 import socket as sock
-from json import dumps, loads
 from datetime import datetime, timedelta
+from utils.logger import getLogger
+from utils.network import Decode_Response, Encode_Request
 
 
 class AgentManager:
@@ -8,6 +9,7 @@ class AgentManager:
         self.agents = {}
         self.forgery_time = timedelta(microseconds=forgery_time)
         self.port = port
+        self.logger = getLogger()
 
         self.sock = sock.socket(type=sock.SOCK_STREAM)
         self.sock.setsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR, True)
@@ -34,17 +36,19 @@ class AgentManager:
     def __call__(self):
         while True:
             client, _ = self.sock.accept()
-            msg = loads(client.recv(2048))  # FIXME: byte a byte
+            msg = Decode_Response(client.recv(2048))  # FIXME: byte a byte
 
             if 'get' in msg:
                 if msg['get'] == 'full_list':
                     self.get_full_list_h(msg, client)
                 else:
                     self.get_service_h(msg, client)
+                self.logger.info(f'petition: {msg}')
             elif 'post' in msg:
                 self.post_service_h(msg, client)
+                self.logger.info(f'petition: {msg}')
             else:
-                print('malformed pakage: ', msg)
+                self.logger.error(f'malformed petition: {msg}')
             client.close()
 
     def post_service_h(self, msg, c_sock):
@@ -54,25 +58,22 @@ class AgentManager:
         self.add_agent(
             (msg['ip'], msg['port'], msg['url'], msg['protocol']), msg['post']
         )
-        print('pakage: ', msg)
 
     def get_full_list_h(self, msg, c_sock):
         '''
         Handler request that send the full list of agents.  
         '''
-        c_sock.send(dumps(list(self.agents.items())).encode())
-        print('pakage: ', msg)
+        c_sock.send(Encode_Request(list(self.agents.items())))
 
     def get_service_h(self, msg, c_sock):
         '''
         Handler request that send a service for a given agent.  
         '''
         c_sock.send(
-            dumps(
+            Encode_Request(
                 self.get_service((msg['ip'], msg['port'], msg['url'], msg['protocol']))
-            ).encode()
+            )
         )
-        print('pakage: ', msg)
 
 
 if __name__ == "__main__":
