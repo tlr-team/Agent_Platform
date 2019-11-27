@@ -11,7 +11,7 @@ class AgentManager:
 
         self.sock = sock.socket(type=sock.SOCK_STREAM)
         self.sock.setsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR, True)
-        self.sock.bind(('localhost', 9347))
+        self.sock.bind(('', self.port))
         self.sock.listen(1024)
 
     def add_agent(self, agent, service):
@@ -76,5 +76,5 @@ class AgentManager:
 
 
 if __name__ == "__main__":
-    am = AgentManager(9343)
+    am = AgentManager(9342)
     am()
