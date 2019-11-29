@@ -22,6 +22,15 @@ class Id(int):
     def __init__(self, value):
         self.value = value
 
+    def __eq__(self, other):
+        # print(other)
+        if isinstance(other, Id):
+            return self.value == other.value
+        return self.value == other
+
+    def __ne__(self, other):
+        return not self == other
+
     def to_str(self, endian='little'):
         '''
         `endian`='little' o 'big'

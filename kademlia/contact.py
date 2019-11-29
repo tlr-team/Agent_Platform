@@ -12,9 +12,15 @@ class Contact:
         self.last_seen: datetime = None
         # self.protocol = protocol
         self.addr = addr
-        self.id = contact_id or sha1(':'.join(addr)).digest()
+        self.id = contact_id or sha1(':'.join((addr[0], str(addr[1])))).digest()
 
-        self.touch()
+    @property
+    def to_dict(self):
+        return {'addr': self.addr, 'id': self.id}
+
+    @staticmethod
+    def from_dict(_dict):
+        return Contact(_dict['addr'], _dict['id'])
 
     def touch(self):
         self.last_seen = datetime.now()
