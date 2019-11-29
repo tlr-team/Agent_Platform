@@ -1,6 +1,7 @@
 import socket as sock
-from json import dumps, loads
 from datetime import datetime, timedelta
+from utils.logger import getLogger
+from utils.network import Encode_Request, Decode_Response
 
 
 class ServicesManager:
@@ -8,13 +9,19 @@ class ServicesManager:
         self.services = {}
         self.forgery_time = timedelta(microseconds=forgery_time)
         self.port = port
+        self.logger = getLogger()
 
-        self.sock = sock.socket(type=sock.SOCK_DGRAM)
-        self.sock.setsockopt(sock.SOCK_STREAM, sock.SO_REUSEADDR, True)
-        self.sock.bind(('localhost', self.port))
+        self.sock = sock.socket(type=sock.SOCK_STREAM)
+        self.sock.setsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR, True)
+        self.sock.bind(('', self.port))
+        self.sock.listen(1024)
 
-    def add_agent(self, key, value):
-        self.services[key] = (value, datetime.now())
+    def add_agent(self, service, agent):
+        if service in self.services:
+            self.services[service][0].append(agent)
+            self.services[service] = (self.services[service][0], datetime.now())
+        else:
+            self.services[service] = ([agent], datetime.now())
 
     def remove_forgotten(self):
         now = datetime.now()
@@ -29,23 +36,41 @@ class ServicesManager:
 
     def __call__(self):
         while True:
-            rawmsg, addr = self.sock.recvfrom(2048)
-            msg = loads(rawmsg)
+            client, _ = self.sock.accept()
+            msg = Decode_Response(client.recv(2048))
 
-            if 'key' in msg and 'id' in msg:
-                self.sock.sendto(
-                    dumps(
-                        {
-                            'id': msg['id'],
-                            'key': msg['key'],
-                            'value': self.get_agents(msg['key']),
-                        }
-                    ),
-                    addr,
-                )
-                print('pakage: ', msg)
+            if 'get' in msg:
+                if msg['get'] == 'list':
+                    self.get_list_h(msg, client)
+                else:
+                    self.get_agents_h(msg, client)
+                self.logger.info(f'petition: {msg}')
+            elif 'post' in msg:
+                self.post_service_h(msg, client)
+                self.logger.info(f'petition: {msg}')
             else:
-                print('malformed pakage: ', msg)
+                self.logger.error(f'malformed petition: {msg}')
+            client.close()
+
+    def get_list_h(self, msg, c_sock):
+        '''
+        Handler request that send an agent list from a given service.
+        '''
+        c_sock.send(Encode_Request(list(self.services.keys())))
+
+    def get_agents_h(self, msg, c_sock):
+        '''
+        Handler request that send an agent list from a given service.  
+        '''
+        c_sock.send(Encode_Request(list(self.get_agents(msg['get']))))
+
+    def post_service_h(self, msg, c_sock):
+        '''
+        Handler request that recieve and store an agent info in the given service.  
+        '''
+        self.add_agent(
+            msg['post'], (msg['ip'], msg['port'], msg['url'], msg['protocol'])
+        )
 
 
 if __name__ == "__main__":

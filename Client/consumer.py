@@ -1,7 +1,8 @@
 from config import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip, Broadcast_Address
 from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
 from time import sleep
-from network import Send_Broadcast_Message, Encode_Request, Decode_Response, Retry
+from utils.network import Send_Broadcast_Message, Encode_Request, Decode_Response, Retry
+from threading import Thread,Semaphore
 
 # hacer un pedido broadcast para determinar la lista de los servicios:
 get_list_message = Encode_Request({ "get":"list" })
@@ -34,7 +35,7 @@ def UI():
 
 # Recurso buscado definido por el usuario
 user_choice = service_list[UI()-1]
-print("choice",user_choice)
+print("choice: ",user_choice)
 
 get_request_message = Encode_Request({ "get": user_choice })
 get_request_addr = get_list_addr
@@ -81,34 +82,41 @@ while(len(producers) and state == "Sin Terminar"):
             client, addr = local.accept()
             # recibir el pedido del socket local
             msg = client.recv(1024)
+            #hilo tcp
+            Thread(target=process_client_request, args=(ConnectionType,msg,addr,client),daemon=True).start()
         else:
+            #hilo upd
             msg, addr = local.recvfrom(1024)
+            Thread(target=process_client_request, args=(ConnectionType,msg,addr,),daemon=True).start()
         
-        # socket que se va a conectar al agente
-        cp = socket(type = SOCK_STREAM) if ConnectionType == "tcp" else socket(type=SOCK_DGRAM)
-
-        msg : bytes
-        addr : tuple
-
-        if ConnectionType == "tcp":
-            # enviar el request al productor (agente)
-            cp.connect(server)
-            cp.send(msg)
-        else:
-            cp.sendto(msg, server)
-        
-        # Leer la respuesta byte a byte para evitar problemas de bloqueo
-        msgcp = cp.recv(1) if ConnectionType == "tcp" else cp.recvfrom(1024)[0]
-        while(msgcp != b''):
-            # enviar la respuesta al socket que originalmente hizo el request a la interfaz local (localhost:8000)
-            client.send(msgcp) if ConnectionType == "tcp" else local.sendto(msgcp, addr)
-            print(msgcp)
-            # continuar leyendo
-            msgcp = cp.recv(1) if ConnectionType == "tcp" else cp.recvfrom(1)[0]
-        
-        # Cerrar los sockets tanto el remoto como el que responde a la petición local
-        cp.close()
-        client.close()
-        state = "Terminado"
+    #FIXME hilo que chequee que el usuario no pare el proceso
+    #state = "Terminado"
     
     local.close()
+
+def process_client_request(ConnectionType, msg, addr, client = None):
+    # socket que se va a conectar al agente
+    cp = socket(type = SOCK_STREAM) if ConnectionType == "tcp" else socket(type=SOCK_DGRAM)
+
+    msg : bytes
+    addr : tuple
+
+    if ConnectionType == "tcp":
+        # enviar el request al productor (agente)
+        cp.connect(server)
+        cp.send(msg)
+    else:
+        cp.sendto(msg, server)
+    
+    # Leer la respuesta byte a byte para evitar problemas de bloqueo
+    msgcp = cp.recv(1) if ConnectionType == "tcp" else cp.recvfrom(1024)[0]
+    while(msgcp != b''):
+        # enviar la respuesta al socket que originalmente hizo el request a la interfaz local (localhost:8000)
+        client.send(msgcp) if ConnectionType == "tcp" else local.sendto(msgcp, addr)
+        print(msgcp)
+        # continuar leyendo
+        msgcp = cp.recv(1) if ConnectionType == "tcp" else cp.recvfrom(1)[0]
+    
+    # Cerrar los sockets tanto el remoto como el que responde a la petición local
+    cp.close()
+    client.close()
