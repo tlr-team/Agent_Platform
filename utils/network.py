@@ -38,10 +38,10 @@ def Void(socket):
 
 # Función que envia un mensaje (en bytes) mediante  broadcast y devuelve el resultado de una función a la que se le pasa el socket
 # Esta función no falla dado que siempre va a existir una interfaz a la cual entregar el socket, el manejo de errores se delega en la función a aplicar
-def Send_Broadcast_Message(message, Broadcast_Address, Broadcast_Port, function = Void):
+def Send_Broadcast_Message(message, Broadcast_Address, Broadcast_Port, function = Void, timeout = 5):
     try:
         with socket(type = SOCK_DGRAM) as broadcast:
-            broadcast.settimeout(5)
+            broadcast.settimeout(timeout)
             broadcast.setsockopt(SOL_SOCKET, SO_BROADCAST, True)
             broadcast.sendto(Encode_Request(message), (Broadcast_Address, Broadcast_Port))
             result = function(broadcast)

@@ -112,7 +112,7 @@ def process_client_request(ConnectionType, msg, addr, client = None):
     msgcp = cp.recv(1) if ConnectionType == "tcp" else cp.recvfrom(1024)[0]
     while(msgcp != b''):
         # enviar la respuesta al socket que originalmente hizo el request a la interfaz local (localhost:8000)
-        client.send(msgcp) if ConnectionType == "tcp" else local.sendto(msgcp, addr)
+        client.send(msgcp) if ConnectionType == "tcp" else cp.sendto(msgcp, addr)
         print(msgcp)
         # continuar leyendo
         msgcp = cp.recv(1) if ConnectionType == "tcp" else cp.recvfrom(1)[0]
