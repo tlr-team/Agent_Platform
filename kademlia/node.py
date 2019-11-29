@@ -4,7 +4,8 @@ from .dht import Id
 from .storage import StorageManager  # TODO: implement the SorageManager
 from threading import Thread, Semaphore
 from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
-from utils.network import Decode_Response, Encode_Request
+from utils.network import Decode_Response, Encode_Request, Upd_Message
+from hashlib import sha1
 
 
 class Node:
@@ -28,23 +29,25 @@ class Node:
             service_port.listen(10)
             while(True):
                 msg, addr = local.recvfrom(1024)
-                message = Decode_Response(msg)
+                Thread(target = self._attend, args=(msg,addr), daemon = True).start()
 
-                if 'ping' in message:
-                    pass
-                elif 'pong' in message:
-                    pass
-                elif 'store' in message:
-                    pass
-                elif 'find_node' in message:
-                    pass
-                elif 'find_node_ret' in message:
-                    pass
-                elif 'find_value' in message:
-                    pass
-                elif 'find_value_ret' in message:
-                    pass
-                #Thread(target = self._attend, args=(msg,addr), daemon = True).start()
+    def _attend(self, msg, addr):
+        message = Decode_Response(msg)
+
+        if 'ping' in message:
+            #Thread(target = self.ping, args=(msg), daemon = True).start()
+        elif 'pong' in message:
+            Thread(target = self.ping, args=(msg,addr[0],addr[1]), daemon = True).start()
+        elif 'store' in message:
+            pass
+        elif 'find_node' in message:
+            pass
+        elif 'find_node_ret' in message:
+            pass
+        elif 'find_value' in message:
+            pass
+        elif 'find_value_ret' in message:
+            pass
 
     @property
     def contact(self):
@@ -54,9 +57,20 @@ class Node:
     def bucket_list(self):
         return self.__bucket_list
 
-    def ping(self, sender: Contact):
+    def ping(self, ip, port):
+        Upd_Message({"ping":{}},ip,port)
+
+    def pong(self, ip, port):
+        Upd_Message({"pong":{}},ip,port)
+
+    def _handle_ping(self, msg):
+        #contact
+        # Upd_Message(msg,ip,port)
         raise NotImplementedError()
         # return ourContact
+
+    def _handle_pong(self, msg, ip , port):
+        
 
     def store(self, sender: Contact, key: Id, val: str):
         raise NotImplementedError()
