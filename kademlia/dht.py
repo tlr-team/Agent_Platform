@@ -20,10 +20,38 @@ class Id(int):
     '''
 
     def __init__(self, value):
-        self.value = value
+        if isinstance(value, bytes) and len(value) != ID_LENGTH_BYTES:
+            value = value.hex()
+        if isinstance(value, str) and value.isdigit():
+            value = int(value, 16)
+        if isinstance(value, int):
+            self.__intvalue = value
+        else:
+            raise Exception(
+                'value {0} is not in the required format.'.format(value)
+            )  # FIXME: Make a custom Exception
+
+    def __xor__(self, other):
+        return Id(self.value ^ other.value)
+
+    def __lt__(self, other):
+        if isinstance(other, Id):
+            return self.value < other.value
+        return self.value < other
+
+    def __le__(self, other):
+        return self < other or self == other
+
+    def __ge__(self, other):
+        return not self < other
+
+    def __gt__(self, other):
+        return not self <= other
+
+    def __repr__(self):
+        return f'Id({self.value})'
 
     def __eq__(self, other):
-        # print(other)
         if isinstance(other, Id):
             return self.value == other.value
         return self.value == other
@@ -31,7 +59,7 @@ class Id(int):
     def __ne__(self, other):
         return not self == other
 
-    def to_str(self, endian='little'):
+    def to_str(self, endian='big'):
         '''
         `endian`='little' o 'big'
         '''
@@ -46,27 +74,10 @@ class Id(int):
             r >>= 8
         return ''.join(byts)
 
-    def to_boolean(self, endian='little'):
+    def to_boolean(self, endian='big'):
         return [b == '1' for b in self.to_str(endian=endian)]
 
     @property
     def value(self):
-        return self.__intValue
-
-    @value.setter
-    def value(self, value):
-        if (
-            isinstance(value, bytes)
-            and (not value.isdigit() or len(value) != ID_LENGTH_BYTES)
-            or not isinstance(value, int)
-        ):
-            raise Exception(
-                'value {0} is not in the required format.'.format(value)
-            )  # FIXME: Make a custom Exception
-
-        self.__intValue = (
-            value
-            if isinstance(value, int)
-            else abs(int.from_bytes(value, byteorder='little'))
-        )  # TODO: Put the correct byte order.
+        return self.__intvalue
 

@@ -1,5 +1,6 @@
-from datetime import datetime
+from time import monotonic
 from hashlib import sha1
+from .dht import Id
 
 
 class Contact:
@@ -12,8 +13,8 @@ class Contact:
         self.last_seen = None
         # self.protocol = protocol
         self.addr = addr
-        self.id = (
-            contact_id or sha1((':'.join((addr[0], str(addr[1])))).encode()).digest()
+        self.id = Id(
+            contact_id or sha1((':'.join((addr[0], str(addr[1])))).encode()).hexdigest()
         )
 
     @property
@@ -25,4 +26,4 @@ class Contact:
         return Contact(_dict['addr'], _dict['id'])
 
     def touch(self):
-        self.last_seen = datetime.now()
+        self.last_seen = monotonic()
