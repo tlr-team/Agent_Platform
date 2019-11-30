@@ -30,7 +30,6 @@ def Retry(seconds):
 
     return FReciever
 
-
 # Funcion por defecto si no se quiere procesar el mesaje broadcast
 def Void(socket):
     pass
@@ -95,9 +94,10 @@ def Tcp_Message(msg,ip,port):
 
 
 # Envia un mensaje udp
-def Udp_Message(msg, ip, port):
+def Udp_Message(msg, ip, port, function = Void):
     with socket(type=SOCK_DGRAM) as sock:
         sock.sendto(Encode_Request(msg), (ip, port))
+        return function(sock)
 
 
 # FIXME aplicar hilos para concurrencia y un lock
