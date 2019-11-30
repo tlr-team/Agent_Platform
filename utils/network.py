@@ -104,17 +104,18 @@ def Udp_Message(msg, ip, port):
 
 # Clase para el algoritmo de descubrimiento
 class Discovering:
-    def __init__(self, port, broadcast_addr, time=10):
+    def __init__(self, port, broadcast_addr, time=10, ttl = 3):
         self.partners = {}
         self.port = port
         self.b_addr = broadcast_addr
         self.mutex = Semaphore()
         self.time = time
+        self.ttl = ttl
         self.socket = socket(type=SOCK_DGRAM)
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
         self.socket.bind(('', port))
 
-    def start(self):
+    def _start(self):
         Thread(target=self._write, daemon=True).start()
         while True:
             msg, addr = self.socket.recvfrom(2048)
@@ -124,7 +125,7 @@ class Discovering:
     def _listen(self, ip):
         if ip not in self.partners:
             self.mutex.acquire()
-            self.partners[ip] = 3
+            self.partners[ip] = self.ttl
             self.mutex.release()
 
     # Hilo que va a enviar cada cierto tiempo definido un mensaje broadcast para decir que esta vivo

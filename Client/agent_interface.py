@@ -1,6 +1,6 @@
 from config import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip, Broadcast_Address
 from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
-from utils.network import Send_Broadcast_Message, Encode_Request, Decode_Response, Retry
+from utils.network import Send_Broadcast_Message, Encode_Request, Decode_Response, Retry, Discovering
 from threading import Thread,Semaphore
 from pathlib import Path
 from yaml import load, FullLoader
@@ -48,10 +48,12 @@ class Agent_Interface:
     la de interfaz local de comunicacion
     '''
     
-    def __init__(self,  ,  template_path = "../Templates"):
+    def __init__(self, template_path = "../Templates"):
+        self.discover = Discovering(Server_Port,Broadcast_Address,time=20)
         self._renew_list()
         self.service_list = []
         self.attenders_list = []
+        self.discover._start()
 
 
     #Hilo que va a publicar todos los agentes en la ruta local
@@ -100,12 +102,6 @@ class Agent_Interface:
             else :
                 user = 0
         return user-1
-    
-    def _whocanhelpme(self):
-        '''
-        Actualiza el listado de attenders disponibles
-        '''
-        self.attenders_list = Send_Broadcast_Message({"WhoCanHelpMe":""},Broadcast_Address,Server_Port,recive_help,10)
 
 
 
