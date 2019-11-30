@@ -15,7 +15,7 @@ class Contact:
         self.addr = addr
         self.id = Id(
             contact_id or sha1((':'.join((addr[0], str(addr[1])))).encode()).hexdigest()
-        )
+        )  # contact_id must be and bytelike, intlike or strhexlike
 
     @property
     def to_dict(self):

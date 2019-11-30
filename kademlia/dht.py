@@ -31,6 +31,13 @@ class Id(int):
                 'value {0} is not in the required format.'.format(value)
             )  # FIXME: Make a custom Exception
 
+    def __hash__(self):
+        return hash(self.value)
+
+    @property
+    def value(self):
+        return self.__intvalue
+
     def __xor__(self, other):
         return Id(self.value ^ other.value)
 
@@ -76,8 +83,4 @@ class Id(int):
 
     def to_boolean(self, endian='big'):
         return [b == '1' for b in self.to_str(endian=endian)]
-
-    @property
-    def value(self):
-        return self.__intvalue
 
