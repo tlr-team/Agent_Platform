@@ -2,9 +2,16 @@ from .contact import Contact
 from .bucketlist import BucketList
 from .dht import Id
 from .storage import StorageManager  # TODO: implement the SorageManager
-from threading import Thread, Semaphore
-from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
-from utils.network import Decode_Response, Encode_Request, Upd_Message
+from threading import Thread, Semaphore, Lock
+from socket import (
+    socket,
+    SOCK_DGRAM,
+    SOL_SOCKET,
+    SO_REUSEADDR,
+    SOCK_STREAM,
+    SO_BROADCAST,
+)
+from utils.network import Decode_Response, Encode_Request, Udp_Message
 from hashlib import sha1
 
 
@@ -20,11 +27,12 @@ class Node:
         self.__bucket_list = BucketList(self.contact.id)
         self.storage_manager = storage
         self.cache_manager = cache_storage
+        self.lock = Lock()
         self.service_port = 9000
         self.db = {}
 
     def _serve(self):
-        with socket(type = SOCK_DGRAM) as serve_socket:
+        with socket(type=SOCK_DGRAM) as serve_socket:
             serve_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
             serve_socket.bind("",self.service_port)
             service_port.listen(10)
@@ -58,8 +66,7 @@ class Node:
     def bucket_list(self):
         return self.__bucket_list
 
-
-    def ping(self, ip, port):
+	def ping(self, ip, port):
         Upd_Message({"ping":{}},ip,port)
 
     def pong(self, ip, port):
@@ -74,4 +81,34 @@ class Node:
 
     def find_value(self, sender: Contact, key: Id):
         raise NotImplementedError()
+        # return contacts, val
+
+    def handle_ping(self, msg):
+        with self.lock:
+            sender_contact = Contact.from_dict(msg['sender'])
+            self.bucket_list.add_contact(sender_contact)
+            Udp_Message({'pong': {}}, *sender_contact.addr)
+        # return ourContact
+
+    def handle_store(self, msg):  # sender: Contact, key: Id, val: str):
+        with self.lock:
+            sender_contact = Contact.from_dict(msg['sender'])
+            self.bucket_list.add_contact(sender_contact)
+            Udp_Message({'store_ret': {}}, *sender_contact.addr)
+
+
+    def handle_find_node(self, msg):  # sender: Contact, key: Id):
+        with self.lock:
+            sender_contact = Contact.from_dict(msg['sender'])
+            self.bucket_list.add_contact(sender_contact)
+            # TODO
+        # raise NotImplementedError()
+        # return contacts, val
+
+    def hanlde_find_value(self, msg):  # sender: Contact, key: Id):
+        with self.lock:
+            sender_contact = Contact.from_dict(msg['sender'])
+            self.bucket_list.add_contact(sender_contact)
+            # TODO
+        # raise NotImplementedError()
         # return contacts, val
