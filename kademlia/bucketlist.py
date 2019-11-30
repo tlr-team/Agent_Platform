@@ -34,14 +34,17 @@ class BucketList:
 
         with self.buckets_lock:
             kbucket = self.getbucket(contact.id)
-            if kbucket
+            if contact.Id in kbucket:
+                kbucket.replace_contact(contact)
 
-    def contains(self, key :Id):
-        return self.buckets
+    # def contains(self, key :Id):
+    #     return self.buckets
 
     def getbucket(self, key: Id):
-        return [i for i in self.buckets if i.id == key].pop()
+        return [b for b in self.buckets if b.hasinrange(key)][0]
 
     def getbucket_ind(self, key: Id):
-        return [i for i in range(len(self.buckets)) if self.buckets[i].id == key].pop()
+        return [i for i in range(len(self.buckets)) if self.buckets[i].hasinrange(key)][
+            0
+        ]
 
