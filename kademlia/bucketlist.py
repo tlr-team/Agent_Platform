@@ -1,4 +1,4 @@
-from .kbucket import KBucket
+from .kbucket import KBucket, K
 from .dht import Id
 from .contact import Contact
 from threading import Lock
@@ -10,9 +10,11 @@ class BucketList:
     for adding contacts (peers) to a particular bucket.
     '''
 
-    def __init__(self, _id: Id):
+    def __init__(self, _id: Id, k=K):
         self.__our_id = _id
-        self.__buckets = []
+        self.__buckets = [
+            KBucket(low=2 ** i, high=2 ** (i + 1) - 1, k=k) for i in range(160)
+        ]
 
         # lock for syncronous use of the bucketlist
         self.buckets_lock = Lock()
@@ -29,13 +31,17 @@ class BucketList:
         return self.__our_id
 
     def add_contact(self, contact: Contact):
-        assert self.__our_id != contact.Id, 'Cannot add yourself as a Contact'
         contact.touch()
 
         with self.buckets_lock:
             kbucket = self.getbucket(contact.id)
-            if contact.Id in kbucket:
-                kbucket.replace_contact(contact)
+
+            # If return false -> the bucket is full
+            if kbucket.add_contact(contact):
+                return True  # No need to ping
+            return (
+                False
+            )  # Need to refresh bucket (Do Pings and remove disconnected ones)
 
     # def contains(self, key :Id):
     #     return self.buckets

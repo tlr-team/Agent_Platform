@@ -13,10 +13,15 @@ class KBucket:
     information regarding the bucket.
     '''
 
-    def __init__(self, low=0, high=2 ** 160, k=K):
+    def __init__(self, low=1, high=2 ** 160 - 1, k=K):
+        '''
+        (ksize = k)
+        (low <= [*ids] <= high)
+        '''
         self.timestamp = None
         self.ksize = k
         self.contacts = OrderedDict()
+        self.pending_contacts = OrderedDict()
         self.low, self.high = low, high
         self.touch()
 
@@ -32,14 +37,20 @@ class KBucket:
         self.timestamp = monotonic()
 
     def hasinrange(self, contact: Contact):
-        return self.low <= contact.Id <= self.high
+        return self.low <= contact.Id < self.high
 
     def add_contact(self, contact: Contact):
         if contact.id in self.contacts:
-            self.contacts
-        if len(self.contacts) == self.ksize:
-            raise Exception('Too many contacts.')  # TODO: Customize Error
-        self.contacts[contact.Id] = contact
+            del self.contacts[contact.id]
+            self.contacts[contact.id] = contact
+        elif len(self.contacts) < self.ksize:
+            self.contacts[contact.id] = contact
+        else:
+            if contact.id in self.pending_contacts:
+                del self.pending_contacts[contact.id]
+            self.pending_contacts[contact.id] = contact
+            return False
+        return True
 
     def __contains__(self, o):
         if isinstance(o, Contact) and o.id in self.contacts:
