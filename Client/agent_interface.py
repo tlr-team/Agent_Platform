@@ -6,6 +6,20 @@ from pathlib import Path
 from yaml import load, FullLoader
 from time import sleep
 
+def recive_help(socket):
+    '''
+    recive pedidos udp por un tiempo
+    '''
+    socket.listen(5)
+    result = []
+    for i in range(0,6):
+        result.append(socket.recvfrom(1024)[1][0]))
+        sleep(2)
+    
+    return result
+    
+
+
 def load_config(path, formato = '.agent'):
     #Directorio donde se encentran las planillas de los agentes
     agent_directory = Path(path)
@@ -37,6 +51,7 @@ class Agent_Interface:
     def __init__(self,  ,  template_path = "../Templates"):
         self._renew_list()
         self.service_list = []
+        self.attenders_list = []
 
 
     #Hilo que va a publicar todos los agentes en la ruta local
@@ -50,11 +65,11 @@ class Agent_Interface:
                 for i in prod.keys():
                     if i != 'service':
                         msg[i] = prod[i]
-                Send_Broadcast_Message(msg,"10.10.10.255",10001,)
+                Send_Broadcast_Message(msg,Broadcast_Address,Server_Port,)
                 print(msg, "sended to broadcast")
             sleep(time_to_sleep)
 
-    def _get_service_list(self, get_list_addr = "10.10.10.255", get_list_port = 10001, get_list_message = {"get":"list"}):
+    def _get_service_list(self, get_list_addr = Broadcast_Address, get_list_port = Server_Port, get_list_message = {"get":"list"}):
         self.service_list = Send_Broadcast_Message(get_list_message,get_list_addr,get_list_port,get_list,0)
 
     def _renew_list(self):
@@ -85,6 +100,14 @@ class Agent_Interface:
             else :
                 user = 0
         return user-1
+    
+    def _whocanhelpme(self):
+        '''
+        Actualiza el listado de attenders disponibles
+        '''
+        self.attenders_list = Send_Broadcast_Message({"WhoCanHelpMe":""},Broadcast_Address,Server_Port,recive_help,10)
+
+
 
 
 
