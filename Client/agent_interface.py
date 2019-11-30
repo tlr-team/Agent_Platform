@@ -28,16 +28,24 @@ def get_list(broadcast):
 
 #FIXME Parametrizar todas las opciones
 class Agent_Interface:
+    '''
+    Clase cuya funcionalidad es la de brindar la de interfaz de la plataforma
+    Tiene dos funcionalidades principales, la de hacer de publisher de agentes y
+    la de interfaz local de comunicacion
+    '''
     
     def __init__(self,  ,  template_path = "../Templates"):
-        self.agent_list = load_config(template_path)
+        self._renew_list()
         self.service_list = []
 
 
     #Hilo que va a publicar todos los agentes en la ruta local
+
+    #region publisher
+
     def _publish_agents(self, time_to_sleep = 5):
         while(True):
-            for prod in lista:
+            for prod in service_list:
                 msg = {"post":prod["service"]}
                 for i in prod.keys():
                     if i != 'service':
@@ -48,10 +56,24 @@ class Agent_Interface:
 
     def _get_service_list(self, get_list_addr = "10.10.10.255", get_list_port = 10001, get_list_message = {"get":"list"}):
         self.service_list = Send_Broadcast_Message(get_list_message,get_list_addr,get_list_port,get_list,0)
+
+    def _renew_list(self):
+        self.agent_list = load_config(self.template_path)
     
+    #endregion
+
+    #region client interface
+
     def _ui(self):
         print("Bienvenido a la plataforma de agentes LR")
         print("Por favor seleccione el tipo de servicio al que se desea conectar:")
+
+        
+    def _print_service_list(self):
+        '''
+        Imprime en pantalla el listado de servicios conodidos
+        Devuelve el indice del servicio seleccionado
+        '''
         for i,service in enumerate(self.service_list):
             print(f'[{i+1}] : {service}')
         total = len(service)
@@ -62,6 +84,10 @@ class Agent_Interface:
                 break
             else :
                 user = 0
-        return user
+        return user-1
+
+
+
+    #endregion
 
 
