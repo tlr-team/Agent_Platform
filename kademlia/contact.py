@@ -12,7 +12,9 @@ class Contact:
         self.last_seen = None
         # self.protocol = protocol
         self.addr = addr
-        self.id = contact_id or sha1(':'.join((addr[0], str(addr[1])))).digest()
+        self.id = (
+            contact_id or sha1((':'.join((addr[0], str(addr[1])))).encode()).digest()
+        )
 
     @property
     def to_dict(self):
