@@ -99,6 +99,9 @@ def Udp_Message(msg, ip, port, function = Void):
         sock.sendto(Encode_Request(msg), (ip, port))
         return function(sock)
 
+def Upd_Response(socket):
+    return Decode_Response(sock.recvfrom(2048))
+
 
 # FIXME aplicar hilos para concurrencia y un lock
 
