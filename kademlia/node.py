@@ -21,6 +21,7 @@ class Node:
         self.storage_manager = storage
         self.cache_manager = cache_storage
         self.service_port = 9000
+        self.db = {}
 
     def _serve(self):
         with socket(type = SOCK_DGRAM) as serve_socket:
@@ -57,23 +58,15 @@ class Node:
     def bucket_list(self):
         return self.__bucket_list
 
+
     def ping(self, ip, port):
         Upd_Message({"ping":{}},ip,port)
 
     def pong(self, ip, port):
         Upd_Message({"pong":{}},ip,port)
 
-    def _handle_ping(self, msg):
-        #contact
-        # Upd_Message(msg,ip,port)
-        raise NotImplementedError()
-        # return ourContact
-
-    def _handle_pong(self, msg, ip , port):
-        
-
-    def store(self, sender: Contact, key: Id, val: str):
-        raise NotImplementedError()
+    def store(self, key: Id, val: str):
+        Upd_Message({"store":{"id":Id,"value":val}},ip,port)
 
     def find_node(self, sender: Contact, key: Id):
         raise NotImplementedError()
