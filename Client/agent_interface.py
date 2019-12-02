@@ -110,7 +110,6 @@ class Agent_Interface:
         while(True):
             self._ui()
             self._serve()
-            pass
 
     def _ui(self):
         print("Por favor seleccione el tipo de servicio al que se desea conectar:")
