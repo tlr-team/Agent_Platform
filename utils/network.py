@@ -13,7 +13,7 @@ from inspect import signature
 from io import BytesIO
 
 # decorador que reintenta una función si esta da error cada seconds cantidad de tiempo
-def Retry(seconds):
+def Retry(seconds, message = 'No es posible conectar, reintentando'):
     time_to_sleep = seconds
 
     def FReciever(function):
@@ -24,6 +24,7 @@ def Retry(seconds):
                 return objetive(*args, **kwargs)
             except:
                 sleep(time_to_sleep)
+                print(message)
                 return wrapper(*args, **kwargs)
 
         return wrapper
