@@ -22,8 +22,8 @@ class Contact:
         return {'addr': self.addr, 'id': self.id}
 
     @staticmethod
-    def from_dict(_dict):
-        return Contact(_dict['addr'], _dict['id'])
+    def from_dict(_dict,):
+        return Contact(_dict['addr'], int(_dict['id']) ^ _dict['our_id'].value)
 
     def touch(self):
         self.last_seen = monotonic()

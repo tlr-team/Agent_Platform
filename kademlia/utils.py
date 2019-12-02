@@ -9,10 +9,11 @@ def shared_prefix(*args):
         i += 1
     return args[0][:i]
 
-class node:
-    def __init__(self,value,tree_constant):
-        self.id
-        self.value = id ^ tree_constant
+
+class Node:
+    def __init__(self, value, tree_constant):
+        self.id = value.id
+        self.value = value
 
     def __lt__(self, other):
         return self.value < other.value
@@ -32,22 +33,23 @@ class node:
     def __ge__(self, other):
         return self.value >= other.value
 
-class Sorted_Queue:
+
+class SortedQueue:
     def __init__(self, k, main_id):
         self.k = k
         self.queue = []
         self.mid = main_id
-    
-    def __add(nde: node):
+
+    def __add(self, nde: Node):
         for i in range(0, len(self.queue)):
-            if nde < self.queue:
+            if nde < self.queue[i]:
                 self.queue.insert(i, nde)
-        if(len(self.queue) > k):
+        if len(self.queue) > self.k:
             self.queue.pop()
 
-    def add(id):
-        self.add(node(id,self.main_id))
+    def add(self, _id):
+        self.add(Node(_id, self.mid))
 
+    def getall(self):
+        return [i.value for i in self.queue]
 
-    def getall():
-        return [ i.value for i in self.queue ]
