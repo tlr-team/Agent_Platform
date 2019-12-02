@@ -90,6 +90,13 @@ def Binary_To_Ip(binary):
         dec_list.append(str(suma))
     return '.'.join(i for i in dec_list[::-1])
 
+# Calcula la dirección broadcast de la subred
+def Get_Broadcast_Ip(ip, mask):
+    ip_bin = Ip_To_Binary(ip)
+    network = ip_bin[:mask]
+    network += '1' * (32-mask)
+    return Binary_To_Ip(network)
+
 # Recive un socket TCP y devuelve el resultado de leer todo el contenido del mismo
 def Sock_Reader(socket):
     result = None
