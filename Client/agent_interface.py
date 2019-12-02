@@ -36,6 +36,29 @@ def load_config(path, formato = '.agent'):
 
     return agents
 
+def process_client_request(ConnectionType, msg, addr, client = None):
+    # socket que se va a conectar al agente
+    with socket(type = SOCK_STREAM) if ConnectionType == "tcp" else socket(type=SOCK_DGRAM) as cp:
+        msg : bytes
+        addr : tuple
+
+        if ConnectionType == "tcp":
+            # enviar el request al productor (agente)
+            cp.connect(server)
+            cp.send(msg)
+        else:
+            cp.sendto(msg, server)
+        
+        # Leer la respuesta byte a byte para evitar problemas de bloqueo
+        msgcp = cp.recv(1) if ConnectionType == "tcp" else cp.recvfrom(1024)[0]
+        while(msgcp != b''):
+            # enviar la respuesta al socket que originalmente hizo el request a la interfaz local (localhost:8000)
+            client.send(msgcp) if ConnectionType == "tcp" else cp.sendto(msgcp, addr)
+            print(msgcp)
+            # continuar leyendo
+            msgcp = cp.recv(1) if ConnectionType == "tcp" else cp.recvfrom(1024)[0]
+        
+
 @Retry(4,"Fallo al obtener petición remota, reintentando")
 def get_list(broadcast):
     msg, addr = broadcast.recvfrom(1024)
@@ -54,6 +77,7 @@ class Agent_Interface:
         self._renew_list()
         self.service_list = []
         self.attenders_list = []
+        self.agent_list = []
         self.discover._start()
 
 
@@ -81,10 +105,18 @@ class Agent_Interface:
     #endregion
 
     #region client interface
+    def UI(self):
+        print("Bienvenido a la plataforma de agentes LR")
+        while(True):
+            self._ui()
+            self._serve()
+            pass
 
     def _ui(self):
-        print("Bienvenido a la plataforma de agentes LR")
         print("Por favor seleccione el tipo de servicio al que se desea conectar:")
+        self.service_list = self._send_request({"get":"list"})
+        service = self._print_service_list()
+        self.agent_list = self._send_request({"get": service})    
 
         
     def _print_service_list(self):
@@ -110,6 +142,47 @@ class Agent_Interface:
         ip = self.discover.partners.keys()[choice]
         return Udp_Message(msg, ip, Server_Port, Upd_Response)
 
+    def _serve(self):
+        state = "Running"
+        if(len(self.agent_list)):
+            address = self.agent_list.pop()
+            # Dirección del agente productor
+            server = (address["ip"],address["port"])
+            ConnectionType = address["stype"] # TCP o UDP
+
+
+            # socket de servicio (local) "localhost:8000 para simplificar el acceso del cliente"
+            local : socket
+
+            if ConnectionType == "tcp": 
+                local = socket(type = SOCK_STREAM)
+                local.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+                local.bind(("127.0.0.1", Service_Port))
+                local.listen(1)
+            else:
+                local = socket(type = SOCK_DGRAM)
+                local.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+                local.bind(("127.0.0.1", Service_Port))
+
+
+            # Server que hace forwarding de las peticiones a la interfaz local al servidor agente
+            while True:
+                msg : bytes
+                if ConnectionType == "tcp":
+                    client, addr = local.accept()
+                    # recibir el pedido del socket local
+                    msg = client.recv(1024)
+                    #hilo tcp
+                    Thread(target=process_client_request, args=(ConnectionType,msg,addr,client),daemon=True).start()
+                else:
+                    #hilo upd
+                    msg, addr = local.recvfrom(1024)
+                    Thread(target=process_client_request, args=(ConnectionType,msg,addr,),daemon=True).start()
+                
+            #FIXME hilo que chequee que el usuario no pare el proceso
+            #state = "Terminado"
+            
+            local.close()
 
 
 
