@@ -74,6 +74,21 @@ def Get_Subnet_Host_Number(ip, mask):
     host = ip_bin[mask:]
     return int(host)
 
+# Convierte un ip de binario a notecion decimal ipv4
+def Binary_To_Ip(binary):
+    dec_list = []
+    suma = 0
+    size = len(binary)
+    for i in range(0,size):
+        t = int(binary[size-i-1])
+        if t:
+            suma += 2**(i%8)
+        if i%8 == 7:
+            dec_list.append(str(suma))
+            suma = 0
+    if suma > 0:
+        dec_list.append(str(suma))
+    return '.'.join(i for i in dec_list[::-1])
 
 # Recive un socket TCP y devuelve el resultado de leer todo el contenido del mismo
 def Sock_Reader(socket):
