@@ -2,7 +2,23 @@ from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO
 from time import sleep
 from json import dumps, loads
 from .network import Get_Subnet_Host_Number,Send_Broadcast_Message,Decode_Response,Encode_Request,Get_Broadcast_Ip,Discovering,Get_Subnet_Host_Number
-from threading import Thread
+from threading import Thread, Event
+
+class StoppableThread(Thread):
+    '''
+    Clase que permite detener una hebra
+    '''
+
+    def __init__(self,*args,**kwargs):
+        super(StoppableThread, self).__init__(*args,**kwargs)
+        self._stop_event = Event()
+
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+        self._stop_event.is_set()
+
 
 class Leader_Election:
     def __init__(self, ip, mask, port):
