@@ -19,9 +19,12 @@ class StoppableThread(Thread):
     def stopped(self):
         self._stop_event.is_set()
 
+def Void(time):
+    pass
+
 
 class Leader_Election:
-    def __init__(self, ip, mask, port):
+    def __init__(self, ip, mask, port, leader_function = Void):
         self.brd = Get_Broadcast_Ip(ip,mask)
         self.discover = Discovering(port,self.brd,,8)
         self.mask = mask
@@ -29,6 +32,7 @@ class Leader_Election:
         self.im_leader = False
         self.iwas_leader = False
         self.leader = None
+        self.leader_function = leader_function
         Thread(target=self._check_leader,daemon = True).start()
 
     def _check_leader(self, time = 10):
@@ -42,6 +46,13 @@ class Leader_Election:
                 else:
                     self.im_leader = False
                     self.iwas_leader = False
+            sleep(time)
+    
+    def _leader_action(self, time = 10):
+        if self.im_leader:
+            thread = StoppableThread(target=self.leader_function,args=(time)).start()
+            thread.join()
+        else:
             sleep(time)
 
     def Im_Leader(self):
