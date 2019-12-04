@@ -17,15 +17,13 @@ from ..utils.network import (
     Sock_Reader,
     Tcp_Message,
     Udp_Message,
+    Upd_Response
 )
 from io import BytesIO
 
 # Funcionamiento del Router:
 # Hilo1 busca un listado de mq (similar al cliente) y pide un request y lo encola en una lista si esta esta vacia (ojo, semaforo)
 # Hilo2 desencola el request si existe , lo procesa y se conecta finalmente con el cliente con el resultado final
-
-def Get_UdpMessage(socket):
-    return  socket.recvfrom(1024)[0]
 
 # Clase base para el router
 class Router:
@@ -49,7 +47,7 @@ class Router:
     # Hilo que se va a conectar al mq para recbir un mensaje
     def _recieve(self):
         while(True):
-            result = Send_Broadcast_Message('get',self.Broadcast_Address,self.Broadcast_Port,Get_UdpMessage)
+            result = Send_Broadcast_Message('get',self.Broadcast_Address,self.Broadcast_Port,Upd_Response)
 
             if result and not len(self.channel):
                 self.mutex.acquire()
