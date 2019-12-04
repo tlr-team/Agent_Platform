@@ -13,8 +13,8 @@ def recive_help(socket):
     '''
     socket.listen(5)
     result = []
-    for i in range(0,6):
-        result.append(socket.recvfrom(1024)[1][0]))
+    for _ in range(0,6):
+        result.append(socket.recvfrom(1024)[1][0])
         sleep(2)
     
     return result
@@ -36,7 +36,7 @@ def load_config(path, formato = '.agent'):
 
     return agents
 
-def process_client_request(ConnectionType, msg, addr, client = None):
+def process_client_request(ConnectionType, msg, addr, server, client = None):
     # socket que se va a conectar al agente
     with socket(type = SOCK_STREAM) if ConnectionType == "tcp" else socket(type=SOCK_DGRAM) as cp:
         msg : bytes
@@ -61,7 +61,7 @@ def process_client_request(ConnectionType, msg, addr, client = None):
 
 @Retry(4,"Fallo al obtener petición remota, reintentando")
 def get_list(broadcast):
-    msg, addr = broadcast.recvfrom(1024)
+    msg, _ = broadcast.recvfrom(1024)
     return Decode_Response(msg)
 
 #FIXME Parametrizar todas las opciones
@@ -74,6 +74,7 @@ class Agent_Interface:
     
     def __init__(self, template_path = "../Templates"):
         self.discover = Discovering(Server_Port,Broadcast_Address,time=20)
+        self.template_path = template_path
         self._renew_list()
         self.service_list = []
         self.attenders_list = []
@@ -87,7 +88,7 @@ class Agent_Interface:
 
     def _publish_agents(self, time_to_sleep = 5):
         while(True):
-            for prod in service_list:
+            for prod in self.service_list:
                 msg = {"post":prod["service"]}
                 for i in prod.keys():
                     if i != 'service':
@@ -142,7 +143,7 @@ class Agent_Interface:
         return Udp_Message(msg, ip, Server_Port, Upd_Response)
 
     def _serve(self):
-        state = "Running"
+        #state = "Running"
         if(len(self.agent_list)):
             address = self.agent_list.pop()
             # Dirección del agente productor
@@ -172,11 +173,11 @@ class Agent_Interface:
                     # recibir el pedido del socket local
                     msg = client.recv(1024)
                     #hilo tcp
-                    Thread(target=process_client_request, args=(ConnectionType,msg,addr,client),daemon=True).start()
+                    Thread(target=process_client_request, args=(ConnectionType,msg,addr,server,client),daemon=True).start()
                 else:
                     #hilo upd
                     msg, addr = local.recvfrom(1024)
-                    Thread(target=process_client_request, args=(ConnectionType,msg,addr,),daemon=True).start()
+                    Thread(target=process_client_request, args=(ConnectionType,msg,server,addr,),daemon=True).start()
                 
             #FIXME hilo que chequee que el usuario no pare el proceso
             #state = "Terminado"

@@ -18,6 +18,7 @@ class MessageHandler(Leader_Election):
         while True:
             sleep(10)
 
+    # region Client
     def _client_serve(self):
         self.logger.info('ready for clients...')
         with socket(type = SOCK_DGRAM) as sock:
@@ -28,6 +29,7 @@ class MessageHandler(Leader_Election):
             while(True):
                 rawmsg, addr = self.s_reciever.recvfrom(2048)
                 Thread(target=self._recieve, args=(rawmsg, addr), daemon = True).start()
+    # endregion
 
     def _router_serve(self):
         self.logger.info('ready for routers...')
@@ -54,11 +56,11 @@ class MessageHandler(Leader_Election):
             self.queue.insert(0, msg)
 
     # Hilo que se encarga de procesar los pedidos hacia los routers
-    def _read(self. rawmsg, addr):
+    def _read(self, rawmsg, addr):
         msg = Decode_Response(rawmsg)
         if msg != 'get':
             self.logger.error(f'wierd petition from addr {addr}.')
-            continue
+            exit()
         self.logger.info(f'request from router: {msg}')
 
         with self.lock_q:
