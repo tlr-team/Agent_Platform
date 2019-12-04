@@ -1,7 +1,7 @@
 import socket as sock
 from datetime import datetime, timedelta
-from utils.logger import getLogger
-from utils.network import Encode_Request, Decode_Response
+from ..utils.logger import getLogger
+from ..utils.network import Encode_Request, Decode_Response
 
 
 class ServicesManager:

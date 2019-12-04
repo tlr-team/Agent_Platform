@@ -1,6 +1,6 @@
-from config import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip, Broadcast_Address
+from .config import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip, Broadcast_Address
 from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
-from utils.network import Send_Broadcast_Message, Encode_Request, Decode_Response, Retry, Discovering, Udp_Message, Upd_Response
+from ..utils.network import Send_Broadcast_Message, Encode_Request, Decode_Response, Retry, Discovering, Udp_Message, Upd_Response
 from threading import Thread,Semaphore
 from pathlib import Path
 from yaml import load, FullLoader

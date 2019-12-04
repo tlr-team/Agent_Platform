@@ -1,7 +1,7 @@
-from config import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip, Broadcast_Address
+from .config import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip, Broadcast_Address
 from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
 from time import sleep
-from utils.network import Send_Broadcast_Message, Encode_Request, Decode_Response, Retry
+from ..utils.network import Send_Broadcast_Message, Encode_Request, Decode_Response, Retry
 from threading import Thread,Semaphore
 
 # hacer un pedido broadcast para determinar la lista de los servicios:
@@ -11,7 +11,7 @@ get_list_port = 10001
 
 @Retry(4,"Fallo al obtener petición remota, reintentando")
 def get_list(broadcast):
-    msg, addr = broadcast.recvfrom(1024)
+    msg, _ = broadcast.recvfrom(1024)
     return Decode_Response(msg)
 
 # obtener la lista de servicios
@@ -43,7 +43,7 @@ get_request_port = get_list_port
 
 # Pedir el listado de posibles productores
 def Get_request(broadcast):
-    msg, addr = broadcast.recvfrom(1024)
+    msg, _ = broadcast.recvfrom(1024)
     return Decode_Response(msg)
 
 # Lista de productores pedida

@@ -123,7 +123,7 @@ def Udp_Message(msg, ip, port, function = Void):
         return function(sock)
 
 def Upd_Response(socket):
-    return Decode_Response(sock.recvfrom(2048))
+    return Decode_Response(socket.recvfrom(2048))
 
 
 # FIXME aplicar hilos para concurrencia y un lock
@@ -144,7 +144,7 @@ class Discovering:
     def _start(self):
         Thread(target=self._write, daemon=True).start()
         while True:
-            msg, addr = self.socket.recvfrom(2048)
+            _, addr = self.socket.recvfrom(2048)
             Thread(target=self._listen, args=(addr[0],), daemon=True).start()
 
     # Hilo que va a recibir el mensaje de broadcast y procesarlo

@@ -1,8 +1,8 @@
 import socket as sock
 from time import sleep
 from threading import Thread, Lock
-from utils.logger import getLogger
-from utils.network import Decode_Response, Encode_Request
+from ..utils.logger import getLogger
+from ..utils.network import Decode_Response, Encode_Request
 
 
 class MessaggeQueue:

@@ -10,7 +10,7 @@ from time import sleep
 from json import loads, dumps
 from threading import Thread, Semaphore
 from queue import Queue
-from utils.network import (
+from ..utils.network import (
     Decode_Response,
     Encode_Request,
     Send_Broadcast_Message,

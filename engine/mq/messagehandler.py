@@ -1,9 +1,9 @@
 from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR
 from time import sleep
 from threading import Thread, Lock
-from utils.logger import getLogger
-from utils.network import Decode_Response, Encode_Request, Discovering
-from utils.leader_election import Leader_Election
+from ..utils.logger import getLogger
+from ..utils.network import Decode_Response, Encode_Request, Discovering
+from ..utils.leader_election import Leader_Election
 
 
 class MessageHandler(Leader_Election):
@@ -27,7 +27,7 @@ class MessageHandler(Leader_Election):
             sock.listen()
 
             while(True):
-                rawmsg, addr = self.s_reciever.recvfrom(2048)
+                rawmsg, addr = sock.recvfrom(2048)
                 Thread(target=self._recieve, args=(rawmsg, addr), daemon = True).start()
     # endregion
 
@@ -39,7 +39,7 @@ class MessageHandler(Leader_Election):
             sock.listen()
 
             while(True):
-                rawmsg, addr = self.s_reciever.recvfrom(2048)
+                rawmsg, addr = sock.recvfrom(2048)
                 Thread(target=self._read, args=(rawmsg, addr), daemon = True).start()
 
 
@@ -68,4 +68,6 @@ class MessageHandler(Leader_Election):
             msg = self.queue.pop() if self.queue else {}
             if len(msg):
                 self.logger.info(f'sended to router: {msg}')
-                self.s_reader.sendto(Encode_Request(msg), addr)
+
+                with socket(type = SOCK_DGRAM) as sock:
+                    sock.sendto(Encode_Request(msg), addr)

@@ -1,7 +1,7 @@
 import socket as sock
 from datetime import datetime, timedelta
-from utils.logger import getLogger
-from utils.network import Decode_Response, Encode_Request
+from ..utils.logger import getLogger
+from ..utils.network import Decode_Response, Encode_Request
 
 
 class AgentManager:
