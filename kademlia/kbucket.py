@@ -2,8 +2,6 @@ from time import monotonic
 from collections import OrderedDict
 from .contact import Contact
 
-K = 3  # FIXME: Put a correct value
-
 
 class KBucket:
     '''
