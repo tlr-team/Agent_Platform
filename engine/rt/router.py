@@ -14,7 +14,7 @@ from ..utils.network import (
     Decode_Response,
     Encode_Request,
     Send_Broadcast_Message,
-    Sock_Reader,
+    Tcp_Sock_Reader,
     Tcp_Message,
     Udp_Message,
     Udp_Response
