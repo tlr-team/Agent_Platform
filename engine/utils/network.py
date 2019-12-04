@@ -123,7 +123,7 @@ def Udp_Message(msg, ip, port, function = Void):
         return function(sock)
 
 def Upd_Response(socket):
-    return Decode_Response(socket.recvfrom(2048))
+    return Decode_Response(socket.recvfrom(2048)[0])
 
 
 # FIXME aplicar hilos para concurrencia y un lock
