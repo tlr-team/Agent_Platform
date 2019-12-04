@@ -1,7 +1,6 @@
 from time import monotonic
 from collections import OrderedDict
 from .contact import Contact
-from .dht import Id
 
 K = 3  # FIXME: Put a correct value
 
@@ -37,7 +36,7 @@ class KBucket:
         self.timestamp = monotonic()
 
     def hasinrange(self, contact: Contact):
-        return self.low <= contact.Id < self.high
+        return self.low <= contact.Id <= self.high
 
     def add_contact(self, contact: Contact):
         if contact.id in self.contacts:
@@ -55,6 +54,6 @@ class KBucket:
     def __contains__(self, o):
         if isinstance(o, Contact) and o.id in self.contacts:
             return True
-        if isinstance(o, Id) and o in self.contacts:
+        if isinstance(o, int) and o in self.contacts:
             return True
         return False
