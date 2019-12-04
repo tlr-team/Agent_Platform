@@ -8,6 +8,8 @@ from ..utils.leader_election import Leader_Election
 
 class MessageHandler(Leader_Election):
     def __init__(self, port_reciever, port_reader):
+        #FIXME ver ip puerto y funcion
+        super(MessageHandler,self).__init__("10.10.10.1",24,9006)
         self.p_reciever, self.p_reader = port_reciever, port_reader
         self.lock_q = Lock()
         self.queue = []
