@@ -45,6 +45,7 @@ class SimpleDataBase:
                     choice = [a,b,c]
                     for i in choice:
                         response.append(self.dbs[tag][i][0])
+            return response
 
     def _reset(self):
         '''
