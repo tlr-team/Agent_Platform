@@ -1,6 +1,6 @@
 from .config import Log_Path,Error_Path,Service_Port,Server_Port,Server_Ip, Broadcast_Address
 from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
-from ..utils.network import Send_Broadcast_Message, Encode_Request, Decode_Response, Retry, Discovering, Udp_Message, Upd_Response
+from ..utils.network import Send_Broadcast_Message, Encode_Request, Decode_Response, Retry, Discovering, Udp_Message, Udp_Response
 from threading import Thread,Semaphore
 from pathlib import Path
 from yaml import load, FullLoader
@@ -140,7 +140,7 @@ class Agent_Interface:
     def _send_request(self,msg):
         choice = randint(0,len(self.discover.partners))
         ip = self.discover.partners.keys()[choice]
-        return Udp_Message(msg, ip, Server_Port, Upd_Response)
+        return Udp_Message(msg, ip, Server_Port, Udp_Response)
 
     def _serve(self):
         #state = "Running"

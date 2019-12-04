@@ -17,7 +17,7 @@ from ..utils.network import (
     Sock_Reader,
     Tcp_Message,
     Udp_Message,
-    Upd_Response
+    Udp_Response
 )
 from io import BytesIO
 
@@ -47,7 +47,7 @@ class Router:
     # Hilo que se va a conectar al mq para recbir un mensaje
     def _recieve(self):
         while(True):
-            result = Send_Broadcast_Message('get',self.Broadcast_Address,self.Broadcast_Port,Upd_Response)
+            result = Send_Broadcast_Message('get',self.Broadcast_Address,self.Broadcast_Port,Udp_Response)
 
             if result and not len(self.channel):
                 self.mutex.acquire()
