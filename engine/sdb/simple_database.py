@@ -3,9 +3,9 @@ from threading import Thread, Lock
 from random import randint
 
 class SimpleDataBase:
-    def __init__(self, ip , port):
+    def __init__(self):
         '''
-        Clase que mantiene un funcionamiento Basico de una Bd (Thread Safe)
+        Clase que mantiene un funcionamiento Basico de una Bd de agentes (Thread Safe)
         '''
         self.dbs = {}
         self.lock = Lock()
@@ -45,4 +45,10 @@ class SimpleDataBase:
                     choice = [a,b,c]
                     for i in choice:
                         response.append(self.dbs[tag][i][0])
+
+    def _reset(self):
+        '''
+        Reinicia la BD
+        '''
+        self.dbs = {}
 
