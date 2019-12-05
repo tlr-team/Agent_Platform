@@ -17,17 +17,16 @@ class Contact:
             id if id else int(sha1((':'.join((ip, str(port)))).encode()).hexdigest())
         )
 
-    @property
     def to_json(self):
         return dumps({'ip': self.ip, 'port': self.port, 'id': self.id})
 
     @staticmethod
     def from_json(jsn_s):
         _dict = loads(jsn_s)
-        return Contact(_dict['ip'], _dict['port'])
+        return Contact(_dict['ip'], _dict['port'], _dict['id'])
 
     def __str__(self):
-        return f'({self.id},{self.ip},{self.port})'
+        return f'<{self.id},{self.ip}:{self.port}>'
 
     __repr__ = __str__
 

@@ -11,25 +11,29 @@ from json import dumps, loads
 from threading import Thread, Semaphore
 from inspect import signature
 from io import BytesIO
+from .logger import getLogger
 
+logger = getLogger(name='utils')
 # decorador que reintenta una función si esta da error cada seconds cantidad de tiempo
-def Retry(seconds, message = 'No es posible conectar, reintentando'):
-    time_to_sleep = seconds
-
+def retry(time_to_sleep, times=1, message='No es posible conectar, reintentando'):
     def FReciever(function):
-        objetive = function
-
         def wrapper(*args, **kwargs):
-            try:
-                return objetive(*args, **kwargs)
-            except:
-                sleep(time_to_sleep)
-                print(message)
-                return wrapper(*args, **kwargs)
+            count = 0
+            while times > count:
+                try:
+                    result = function(*args, **kwargs)
+                    return True, result
+                except:
+                    logger.error(message)
+                    if times <= count + 1 and time_to_sleep:
+                        sleep(time_to_sleep)
+                count += 1
+            return False, None
 
         return wrapper
 
     return FReciever
+
 
 # Funcion por defecto si no se quiere procesar el mesaje broadcast
 def Void(socket):
@@ -38,12 +42,16 @@ def Void(socket):
 
 # Función que envia un mensaje (en bytes) mediante  broadcast y devuelve el resultado de una función a la que se le pasa el socket
 # Esta función no falla dado que siempre va a existir una interfaz a la cual entregar el socket, el manejo de errores se delega en la función a aplicar
-def Send_Broadcast_Message(message, Broadcast_Address, Broadcast_Port, function = Void, timeout = 5):
+def Send_Broadcast_Message(
+    message, Broadcast_Address, Broadcast_Port, function=Void, timeout=5
+):
     try:
-        with socket(type = SOCK_DGRAM) as broadcast:
+        with socket(type=SOCK_DGRAM) as broadcast:
             broadcast.settimeout(timeout)
             broadcast.setsockopt(SOL_SOCKET, SO_BROADCAST, True)
-            broadcast.sendto(Encode_Request(message), (Broadcast_Address, Broadcast_Port))
+            broadcast.sendto(
+                Encode_Request(message), (Broadcast_Address, Broadcast_Port)
+            )
             result = function(broadcast)
     except:
         result = ''
@@ -74,28 +82,31 @@ def Get_Subnet_Host_Number(ip, mask):
     host = ip_bin[mask:]
     return int(host)
 
+
 # Convierte un ip de binario a notecion decimal ipv4
 def Binary_To_Ip(binary):
     dec_list = []
     suma = 0
     size = len(binary)
-    for i in range(0,size):
-        t = int(binary[size-i-1])
+    for i in range(0, size):
+        t = int(binary[size - i - 1])
         if t:
-            suma += 2**(i%8)
-        if i%8 == 7:
+            suma += 2 ** (i % 8)
+        if i % 8 == 7:
             dec_list.append(str(suma))
             suma = 0
     if suma > 0:
         dec_list.append(str(suma))
     return '.'.join(i for i in dec_list[::-1])
 
+
 # Calcula la dirección broadcast de la subred
 def Get_Broadcast_Ip(ip, mask):
     ip_bin = Ip_To_Binary(ip)
     network = ip_bin[:mask]
-    network += '1' * (32-mask)
+    network += '1' * (32 - mask)
     return Binary_To_Ip(network)
+
 
 # Recive un socket TCP y devuelve el resultado de leer todo el contenido del mismo
 def Sock_Reader(socket):
@@ -108,19 +119,21 @@ def Sock_Reader(socket):
         result = Decode_Response(buf.getvalue())
     return result
 
-#Envia un mensaje tcp y devuelve la respuesta
-def Tcp_Message(msg,ip,port):
-    with socket(type= SOCK_STREAM) as sock:
-        sock.connect((ip,port))
+
+# Envia un mensaje tcp y devuelve la respuesta
+def Tcp_Message(msg, ip, port):
+    with socket(type=SOCK_STREAM) as sock:
+        sock.connect((ip, port))
         sock.send(Encode_Request(msg))
         return Sock_Reader(sock)
 
 
 # Envia un mensaje udp
-def Udp_Message(msg, ip, port, function = Void):
+def Udp_Message(msg, ip, port, function=Void):
     with socket(type=SOCK_DGRAM) as sock:
         sock.sendto(Encode_Request(msg), (ip, port))
         return function(sock)
+
 
 def Udp_Response(socket):
     return Decode_Response(socket.recvfrom(2048)[0])
@@ -130,7 +143,7 @@ def Udp_Response(socket):
 
 # Clase para el algoritmo de descubrimiento
 class Discovering:
-    def __init__(self, port, broadcast_addr, time=10, ttl = 3):
+    def __init__(self, port, broadcast_addr, time=10, ttl=3):
         self.partners = {}
         self.port = port
         self.b_addr = broadcast_addr
