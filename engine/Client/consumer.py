@@ -23,7 +23,7 @@ def UI():
     print("Por favor seleccione el tipo de servicio al que se desea conectar:")
     for i,service in enumerate(service_list):
         print(f'[{i+1}] : {service}')
-    total = len(service)
+    total = len(service_list)
     user = 0
     while(not user):
         user = int(input("Escriba el numero del Servicio: "))
