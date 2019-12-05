@@ -1,9 +1,11 @@
-from .contact import 
+from .contact import Contact
 from .bucketlist import BucketList
 from .storage import StorageManager  # TODO: implement the SorageManager
 from threading import Thread, Semaphore, Lock
 from engine.utils.logger import getLogger
 from rpyc import Service
+from .utils import rpyc_connect, FakeNTP
+from ..engine.utils.network import retry
 from socket import (
     socket,
     SOCK_DGRAM,
@@ -13,8 +15,8 @@ from socket import (
     SO_BROADCAST,
 )
 
-default_KSize = 3  # FIXME: Put a correct value
-default_BSize = 3
+DefaultKSize = 3  # FIXME: Put a correct value
+DefaultBSize = 160
 
 
 class KademliaProtocol(Service):
