@@ -117,6 +117,12 @@ class KademliaProtocol(Service):
         return result
 
     # endregion
+    def connect_to(self, contact):
+        self.logger.debug(f'connect_to :: trying Contact:{contact}')
+        connection = rpyc_connect(contact.ip, contact.port, timeout=1)
+        connection.ping()
+        self.logger.debug(f'connect_to :: Added Contact:{contact}')
+        return connection
 
     def add_contacts(self, contact: Contact):
         self.logger.debug(f'add_contacts :: Updating contact {contact}).')
