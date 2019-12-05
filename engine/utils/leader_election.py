@@ -3,6 +3,7 @@ from time import sleep
 from json import dumps, loads
 from .network import Get_Subnet_Host_Number,Send_Broadcast_Message,Decode_Response,Encode_Request,Get_Broadcast_Ip,Discovering,Get_Subnet_Host_Number
 from threading import Thread, Event
+from .logger import getLogger
 
 class StoppableThread(Thread):
     '''
@@ -26,21 +27,23 @@ def Void(time):
 class Leader_Election:
     def __init__(self, ip, mask, port, leader_function = Void):
         self.brd = Get_Broadcast_Ip(ip,mask)
-        self.discover = Discovering(port,self.brd,ttl=8)
+        self.discover = Discovering(port,self.brd,5,8)
         self.mask = mask
         self.ip = ip
         self.im_leader = False
         self.iwas_leader = False
         self.leader = None
         self.leader_function = leader_function
+        self.logger = getLogger()
         Thread(target=self._check_leader,daemon = True).start()
         while(True):
             sleep(5)
 
     def _check_leader(self, time = 10):
         while(True):
-            ips = self.discover.partners.keys()
+            ips = self.discover.Get_Partners()
             self.leader = ips.sort(key=lambda x : Get_Subnet_Host_Number(x,self.mask))[-1] if len(self.discover.partners) else None
+            self.logger.info(f'New Leader {self.leader}')
             if self.leader:
                 if self.ip == self.leader:
                     self.im_leader = True

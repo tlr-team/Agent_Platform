@@ -153,6 +153,11 @@ class Discovering:
         self.socket = socket(type=SOCK_DGRAM)
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
         self.socket.bind(('', port))
+        Thread(target=self._start,daemon=True,name='DiscoverServer')
+
+    def Get_Partners(self):
+        with self.mutex:
+            return self.partners.keys()
 
     def _start(self):
         Thread(target=self._write, daemon=True).start()
