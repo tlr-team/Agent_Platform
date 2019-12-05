@@ -98,8 +98,23 @@ class KademliaProtocol(Service):
             self.logger.debug(f'exposed_find_value :: Key({key}) not found.')
             return None, 0
 
-    def exposed_find_node(self, from_contact: Contact, key: int):
-        pass
+    def exposed_find_node(self, sender: Contact, key: int):
+        if not self.initialized:
+            self.logger.error(f'exposed_find_node :: Node not initialized.')
+            return False
+        sender = Contact.from_json(sender)
+        self.update_contacts(sender)
+        self.logger.debug(f'exposed_find_node :: Requested by {sender}.')
+        result = []
+        with self.bucket_list.buckets_lock:
+            for c in self.bucket_list.get_closest(key):
+                result.append(c.to_json())
+                if len(result) >= self.k:
+                    break
+        self.logger.debug(
+            f'exposed_find_node :: Sended {len(result)} contacts to {sender}.'
+        )
+        return result
 
     # endregion
 
