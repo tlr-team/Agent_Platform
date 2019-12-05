@@ -124,8 +124,40 @@ class KademliaProtocol(Service):
         self.logger.debug(f'connect_to :: Added Contact:{contact}')
         return connection
 
-    def add_contacts(self, contact: Contact):
-        self.logger.debug(f'add_contacts :: Updating contact {contact}).')
+    # region Do actions
+    @retry(1, 1, message='do_ping(retry) :: Fail to connect')
+    def do_ping(self, reciever: Contact):
+        self.logger.debug(f'do_ping :: Node not initialized.')
+        con = self.connect_to(reciever)
+        result = con.root.ping(self.contact.to_json())
+        return result
+
+    @retry(1, 1, message='do_store(retry) :: Fail to connect')
+    def do_store_value(self, reciever: Contact, key, value, store_time):
+        self.logger.debug(f'do_store :: Storing ({key},{value}) in {reciever}.')
+        con = self.connect_to(reciever)
+        result = con.root.store(
+            self.contact.to_json(), int(key), str(value), store_time
+        )
+        return result
+
+    @retry(1, 1, message='do_find_node(retry) :: Fail to connect')
+    def do_find_node(self, reciever: Contact, key):
+        self.logger.debug(
+            f'do_find_node :: Searching a node with key:{key} in {reciever}.'
+        )
+        con = self.connect_to(reciever)
+        result = con.root.find_node(self.contact.to_json(), int(key))
+        return result
+
+    @retry(1, 1, message='do_find_value(retry) :: Fail to connect')
+    def do_find_value(self, reciever: Contact, key):
+        self.logger.debug(
+            f'do_find_value :: Searching a value with key:{key} in {reciever}.'
+        )
+        con = self.connect_to(reciever)
+        result = con.root.find_value(self.contact.to_json(), int(key))
+        return result
 
     def update_contacts(self, contact: Contact):
         self.logger.debug(f'update_contacts :: Updating contact {contact}).')
