@@ -126,3 +126,24 @@ class KademliaProtocol(Service):
 
     def add_contacts(self, contact: Contact):
         self.logger.debug(f'add_contacts :: Updating contact {contact}).')
+
+    def update_contacts(self, contact: Contact):
+        self.logger.debug(f'update_contacts :: Updating contact {contact}).')
+        if contact == self.contact:
+            return
+        if not self.bucket_list.add_contact(contact):
+            # bucket full
+            with self.bucket_list.buckets_lock:
+                bucket = self.bucket_list._get_bucket(contact.id)
+            bucket.lock.acquire()
+            for cont in bucket:
+                if not self.do_ping(cont):
+                    to_rem = cont
+                    break
+            if to_rem:
+                self.logger.debug(f'update_contacts :: To remove contact:{to_rem}.')
+                bucket.remove_contact(to_rem)
+                bucket.add_contact(contact)
+            bucket.lock.release()
+        self.logger.debug(f'update_contacts :: Done.')
+        return
