@@ -102,7 +102,7 @@ def Tcp_Sock_Reader(sock):
     result = None
     with BytesIO() as buf:
         msg = sock.recv(1)
-        llaves = 1 if msg == b'{' else 0
+        llaves = 1 if msg in b'{[' else 0
         if llaves:
             buf.write(msg)
             comillas = False
@@ -111,11 +111,10 @@ def Tcp_Sock_Reader(sock):
                 buf.write(msg)
                 if msg == b'"':
                     comillas = not comillas
-                if msg == b'{' and not comillas:
+                if msg in b'{['  and not comillas:
                     llaves += 1
-                if msg == b'}' and not comillas:
+                if msg in b'}]' and not comillas:
                     llaves -= 1
-            print(buf.getvalue())
             result = Decode_Response(buf.getvalue())
     return result
 
