@@ -40,9 +40,10 @@ class SharedDataBase(SimpleDataBase):
 
         if 'get' in request:
             if request['get'] == 'list':
-                sock.send(Encode_Request(self.dbs.keys()))
+                full_list = Encode_Request([ a for a in self.dbs])
+                sock.send(full_list)
 
-                self.logger.info(f'Full Service List Sent to {addr}')
+                self.logger.info(f'Full Service List {full_list} Sent to {addr}')
 
             else:
                 message = self._get(request['get'])

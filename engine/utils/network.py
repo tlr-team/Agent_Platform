@@ -109,11 +109,11 @@ def Tcp_Sock_Reader(socket):
     return result
 
 #Envia un mensaje tcp y devuelve la respuesta
-def Tcp_Message(msg,ip,port):
+def Tcp_Message(msg,ip,port, function = Tcp_Sock_Reader):
     with socket(type= SOCK_STREAM) as sock:
         sock.connect((ip,port))
         sock.send(Encode_Request(msg))
-        return Tcp_Sock_Reader(sock)
+        return function(sock)
 
 
 # Envia un mensaje udp
