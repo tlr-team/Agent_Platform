@@ -9,7 +9,7 @@ from ..utils.network import Tcp_Sock_Reader, Encode_Request
 from time import sleep
 
 class SharedDataBase(SimpleDataBase):
-    def __init__(self, ip, dbport, leaderelectionport, ):
+    def __init__(self, ip, dbport, leaderelectionport):
         super(SharedDataBase,self).__init__()
         self.ip = ip
         self.dbport = dbport
@@ -31,7 +31,10 @@ class SharedDataBase(SimpleDataBase):
     def _process_request(self, sock, addr):
         request = Tcp_Sock_Reader(sock)
         if 'get' in request:
-            sock.send(Encode_Request(self._get(request['get'])))
+            if request['get'] == 'list':
+                sock.send(Encode_Request(self.dbs.keys()))
+            else:
+                sock.send(Encode_Request(self._get(request['get'])))
         if 'post' in request:
             self._insert(request['post'],{ 'ip':request['ip'],'port':request['port'],'url':request['url']})
 
