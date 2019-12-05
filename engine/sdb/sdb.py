@@ -16,6 +16,8 @@ class SharedDataBase(SimpleDataBase):
         self.ip = ip
         self.dbport = dbport
         self.backup = ""
+        self.im_backup = False
+        self.to_backup = ""
         Thread(target=self._client_Serve, daemon=True).start()
         while(True):
             sleep(10)
@@ -34,29 +36,29 @@ class SharedDataBase(SimpleDataBase):
                 Thread(target=self._process_request,args=(client,addr),daemon=True).start()
     
     def _process_request(self, sock, addr):
-        request = Tcp_Sock_Reader(sock)
+        if not self.im_backup or self.to_backup == addr[0]:
+            request = Tcp_Sock_Reader(sock)
 
-        self.logger.info(f'Recieved {request} from {addr}')
+            self.logger.info(f'Recieved {request} from {addr}')
 
-        if 'get' in request:
-            if request['get'] == 'list':
-                full_list = Encode_Request([ a for a in self.dbs])
-                sock.send(full_list)
+            if 'get' in request:
+                if request['get'] == 'list':
+                    full_list = Encode_Request([ a for a in self.dbs])
+                    sock.send(full_list)
 
-                self.logger.info(f'Full Service List {full_list} Sent to {addr}')
+                    self.logger.info(f'Full Service List {full_list} Sent to {addr}')
 
-            else:
-                message = self._get(request['get'])
-                sock.send(Encode_Request(message))
+                else:
+                    message = self._get(request['get'])
+                    sock.send(Encode_Request(message))
 
-                self.logger.info(f'Sent {message} to {addr}')
-        elif 'post' in request:
-            if(self.backup != ''):
-                
-                self.logger.info(f'Backup Update Sent to {self.backup}')
+                    self.logger.info(f'Sent {message} to {addr}')
+            elif 'post' in request:
+                if(self.backup != ''):
+                    
+                    self.logger.info(f'Backup Update Sent to {self.backup}')
 
-                Tcp_Message(request, self.backup, self.dbport)
-            self._insert(request['post'],{ 'ip':request['ip'],'port':request['port'],'url':request['url']})
-        
+                    Tcp_Message(request, self.backup, self.dbport)
+                self._insert(request['post'],{ 'ip':request['ip'],'port':request['port'],'url':request['url']})    
         sock.close()
 
