@@ -24,7 +24,7 @@ class SharedDataBase(SimpleDataBase):
     def _client_Serve(self):
         with socket(type=SOCK_STREAM) as sock:
             sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
-            sock.bind(self.ip,self.dbport)
+            sock.bind((self.ip,self.dbport))
             sock.listen(10)
             
             self.logger.info(f'Database Service Initiated at {self.ip}, {self.dbport}')
