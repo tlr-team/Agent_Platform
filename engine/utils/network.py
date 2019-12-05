@@ -72,7 +72,11 @@ def Ip_To_Binary(ip):
 def Get_Subnet_Host_Number(ip, mask):
     ip_bin = Ip_To_Binary(ip)
     host = ip_bin[mask:]
-    return int(host)
+    result = 0
+    for i in range(0,len(host)):
+        if int(host[i]):
+            result += 2 ** i 
+    return result
 
 # Convierte un ip de binario a notecion decimal ipv4
 def Binary_To_Ip(binary):

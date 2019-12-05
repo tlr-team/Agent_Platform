@@ -43,8 +43,10 @@ class Leader_Election:
     def _check_leader(self, time = 10):
         while(True):
             ips = self.discover.Get_Partners()
-            self.leader = ips.sort(key=lambda x : Get_Subnet_Host_Number(x,self.mask))[-1] if len(self.discover.partners) else None
-            self.logger.info(f'New Leader {self.leader}')
+            if len(self.discover.partners): 
+                ips.sort(key=lambda x : Get_Subnet_Host_Number(x,self.mask))
+                self.leader = ips[-1]
+                self.logger.info(f'New Leader {self.leader}')
             if self.leader:
                 if self.ip == self.leader:
                     self.im_leader = True
@@ -52,6 +54,8 @@ class Leader_Election:
                 else:
                     self.im_leader = False
                     self.iwas_leader = False
+            else:
+                self.leader = None
             sleep(time)
     
     def _leader_action(self, time = 10):
