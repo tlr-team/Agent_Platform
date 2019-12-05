@@ -166,6 +166,7 @@ class Discovering:
 
     def _start(self):
         Thread(target=self._write, daemon=True).start()
+        Thread(target=self._refresh, daemon=True).start()
         print('Server initated')
         while True:
             _, addr = self.socket.recvfrom(1024)
@@ -183,12 +184,15 @@ class Discovering:
         while True:
             print("sended")
             Send_Broadcast_Message("Hello", self.b_addr, self.port)
-            with self.mutex:
-                temp = {}
-                for name, val in self.partners.items():
-                    if val > 1:
-                        temp[name] = val - 1
-                self.partners = temp
-                print(temp)
             sleep(self.time)
+
+    #Hilo que va a refrescar el estado de la tabla
+    def _refresh(self):
+        with self.mutex:
+            temp = {}
+            for name, val in self.partners.items():
+                if val > 1:
+                    temp[name] = val - 1
+            self.partners = temp
+        sleep(self.time)
 
