@@ -34,6 +34,8 @@ class Leader_Election:
         self.leader = None
         self.leader_function = leader_function
         Thread(target=self._check_leader,daemon = True).start()
+        while(True):
+            sleep(5)
 
     def _check_leader(self, time = 10):
         while(True):

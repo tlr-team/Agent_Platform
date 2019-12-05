@@ -157,7 +157,7 @@ class Discovering:
     def _start(self):
         Thread(target=self._write, daemon=True).start()
         while True:
-            _, addr = self.socket.recvfrom(2048)
+            _, addr = self.socket.recvfrom(1024)
             Thread(target=self._listen, args=(addr[0],), daemon=True).start()
 
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
