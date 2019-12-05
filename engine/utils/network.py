@@ -109,7 +109,7 @@ def Get_Broadcast_Ip(ip, mask):
 
 
 # Recive un socket TCP y devuelve el resultado de leer todo el contenido del mismo
-def Sock_Reader(socket):
+def Tcp_Sock_Reader(socket):
     result = None
     with BytesIO() as buf:
         msg = socket.recv(1)
@@ -125,7 +125,7 @@ def Tcp_Message(msg, ip, port):
     with socket(type=SOCK_STREAM) as sock:
         sock.connect((ip, port))
         sock.send(Encode_Request(msg))
-        return Sock_Reader(sock)
+        return Tcp_Sock_Reader(sock)
 
 
 # Envia un mensaje udp
