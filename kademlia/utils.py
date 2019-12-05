@@ -1,4 +1,6 @@
 import operator
+from rpyc import VoidService, SocketStream, connect_stream
+from time import monotonic
 
 
 def shared_prefix(*args):
@@ -10,7 +12,7 @@ def shared_prefix(*args):
     return args[0][:i]
 
 
-def to_str(val: int, endian='big'):
+def to_str(val: int, endian='little'):
     '''
     `endian`='little' o 'big'
     '''
@@ -26,7 +28,7 @@ def to_str(val: int, endian='big'):
     return ''.join(byts)
 
 
-def to_boolean(val: int, endian='big'):
+def to_boolean(val: int, endian='little'):
     return [b == '1' for b in to_str(val, endian=endian)]
 
 
@@ -73,3 +75,17 @@ class SortedQueue:
     def getall(self):
         return [i.value for i in self.queue]
 
+
+def rpyc_connect(
+    host, port, service=VoidService, config={}, keepalive=False, timeout=3
+):
+    '''Creates an rpyc connection.'''
+    s = SocketStream.connect(host, port, keepalive=keepalive, timeout=timeout)
+    return connect_stream(s, service=VoidService, config=config)
+
+
+class FakeNTP:
+    @staticmethod
+    def now():
+        '''Gives the monotonic clock time.'''
+        return monotonic()
