@@ -144,6 +144,7 @@ def Udp_Response(socket):
 # Clase para el algoritmo de descubrimiento
 class Discovering:
     def __init__(self, port, broadcast_addr, time=10, ttl = 3):
+        print('init')
         self.partners = {}
         self.port = port
         self.b_addr = broadcast_addr
@@ -157,12 +158,14 @@ class Discovering:
 
     def Get_Partners(self):
         with self.mutex:
-            return self.partners.keys()
+            return [a for a in self.partners.keys()]
 
     def _start(self):
         Thread(target=self._write, daemon=True).start()
+        print('Server initated')
         while True:
             _, addr = self.socket.recvfrom(1024)
+            print('request recieved')
             Thread(target=self._listen, args=(addr[0],), daemon=True).start()
 
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
@@ -174,6 +177,7 @@ class Discovering:
     # Hilo que va a enviar cada cierto tiempo definido un mensaje broadcast para decir que esta vivo
     def _write(self):
         while True:
+            print("sended")
             Send_Broadcast_Message("Hello", self.b_addr, self.port)
             with self.mutex:
                 temp = {}
@@ -181,5 +185,6 @@ class Discovering:
                     if val > 1:
                         temp[name] = val - 1
                 self.partners = temp
+                print(temp)
             sleep(self.time)
 
