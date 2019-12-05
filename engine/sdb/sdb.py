@@ -57,4 +57,6 @@ class SharedDataBase(SimpleDataBase):
 
                 Tcp_Message(request, self.backup, self.dbport)
             self._insert(request['post'],{ 'ip':request['ip'],'port':request['port'],'url':request['url']})
+        
+        sock.close()
 
