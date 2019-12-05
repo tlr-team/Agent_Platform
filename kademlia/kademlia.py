@@ -80,11 +80,23 @@ class KademliaProtocol(Service):
         # self.logger.debug(f'exposed_store :: Finish with {sender}.')
         return True
 
-    def exposed_store_value(self, sender: Contact, key: int, value: str):
-        pass
-
-    def exposed_find_value(self, from_contact: Contact, key: int):
-        pass
+    def exposed_find_value(self, sender: Contact, key: int):
+        if not self.initialized:
+            self.logger.error(f'exposed_find_value :: Node not initialized.')
+            return None
+        sender = Contact.from_json(sender)
+        self.update_contacts(sender)
+        self.logger.debug(f'exposed_find_value :: Requested by {sender}.')
+        try:
+            self.db_lock.acquire()
+            value, store_time = self.db[key]
+            self.logger.debug(f'exposed_find_value :: Found key:{key}, value:{value}.')
+            self.db_lock.release()
+            return value, store_time
+        except KeyError:
+            self.db_lock.release()
+            self.logger.debug(f'exposed_find_value :: Key({key}) not found.')
+            return None, 0
 
     def exposed_find_node(self, from_contact: Contact, key: int):
         pass
