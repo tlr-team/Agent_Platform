@@ -74,7 +74,7 @@ def Get_Subnet_Host_Number(ip, mask):
     host = ip_bin[mask:]
     result = 0
     for i in range(0,len(host)):
-        if int(host[i]):
+        if int(host[len(host)-i-1]):
             result += 2 ** i 
     return result
 
