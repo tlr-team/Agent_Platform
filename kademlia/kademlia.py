@@ -57,8 +57,27 @@ class KademliaProtocol(Service):
         self.update_contacts(sender)
         self.logger.debug(f'exposed_ping :: contact:{sender} stored.')
         return self.contact.to_json()
+
+    def exposed_store(self, sender: Contact, key: int, value: str, store_time):
+        self.logger.debug(
+            f'exposed_store :: Storing ({key},{value}) at time {store_time}.'
         )
-        self.add_contacts(sender)
+        if not self.initialized:
+            self.logger.error(f'exposed_store :: Node not initialized.')
+            return False
+        self.logger.debug(f'exposed_store :: Requested by {sender}.')
+        sender = Contact.from_json(sender)
+        self.update_contacts(sender)
+        try:
+            self.db_lock.acquire()
+            stored_value, time = self.db[key]
+        except KeyError:
+            stored_value, time = (value, store_time)
+        self.db[key] = (
+            (value, store_time) if time < store_time else (stored_value, time)
+        )
+        self.db_lock.release()
+        # self.logger.debug(f'exposed_store :: Finish with {sender}.')
         return True
 
     def exposed_store_value(self, sender: Contact, key: int, value: str):
