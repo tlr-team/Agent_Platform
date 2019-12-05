@@ -98,22 +98,36 @@ def Get_Broadcast_Ip(ip, mask):
     return Binary_To_Ip(network)
 
 # Recive un socket TCP y devuelve el resultado de leer todo el contenido del mismo
-def Tcp_Sock_Reader(socket):
+def Tcp_Sock_Reader(sock):
     result = None
     with BytesIO() as buf:
-        msg = socket.recv(1)
-        while msg != b'':
+        msg = sock.recv(1)
+        llaves = 1 if msg == b'{' else 0
+        if llaves:
             buf.write(msg)
-            msg = socket.recv(1)
-        result = Decode_Response(buf.getvalue())
+            comillas = False
+            while llaves:
+                msg = sock.recv(1)
+                buf.write(msg)
+                if msg == b'"':
+                    comillas = not comillas
+                if msg == b'{' and not comillas:
+                    llaves += 1
+                if msg == b'}' and not comillas:
+                    llaves -= 1
+            print(buf.getvalue())
+            result = Decode_Response(buf.getvalue())
     return result
 
 #Envia un mensaje tcp y devuelve la respuesta
 def Tcp_Message(msg,ip,port, function = Tcp_Sock_Reader):
     with socket(type= SOCK_STREAM) as sock:
         sock.connect((ip,port))
-        sock.send(Encode_Request(msg))
-        return function(sock)
+        tmp = Encode_Request(msg)
+        print(len(tmp))
+        sock.send(tmp)
+        response = function(sock)
+    return response
 
 
 # Envia un mensaje udp
