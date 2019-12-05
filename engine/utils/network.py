@@ -74,8 +74,8 @@ def Get_Subnet_Host_Number(ip, mask):
     host = ip_bin[mask:]
     result = 0
     for i in range(0,len(host)):
-        if int(host[len(host)-i-1]):
-            result += 2 ** i 
+        if int(host[i]):
+            result += 2 ** (len(host)-i-1) 
     return result
 
 # Convierte un ip de binario a notecion decimal ipv4

@@ -45,7 +45,7 @@ class Leader_Election:
             ips = self.discover.Get_Partners()
             if len(self.discover.partners): 
                 ips.sort(key=lambda x : Get_Subnet_Host_Number(x,self.mask))
-                self.leader = ips[0]
+                self.leader = ips[-1]
                 self.logger.info(f'New Leader {self.leader}')
             if self.leader:
                 if self.ip == self.leader:
