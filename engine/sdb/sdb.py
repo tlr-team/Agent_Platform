@@ -4,14 +4,15 @@ Shared Db File
 
 from .simple_database import SimpleDataBase
 from socket import socket, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
-from threading import Thread
-from ..utils.network import Tcp_Sock_Reader, Encode_Request, Tcp_Message
+from threading import Thread, Lock
+from ..utils.network import Tcp_Sock_Reader, Encode_Request, Tcp_Message, ServerTcp
 from time import sleep
 from ..utils.logger import getLogger
+from ..utils.leader_election import Leader_Election
 
 class SharedDataBase(SimpleDataBase):
-    def __init__(self, ip, dbport, leaderelectionport):
-        super(SharedDataBase,self).__init__()
+    def __init__(self, ip, mask, dbport, leaderelectionport):
+        SimpleDataBase.__init__(self)
         self.logger = getLogger()
         self.ip = ip
         self.dbport = dbport
@@ -19,22 +20,11 @@ class SharedDataBase(SimpleDataBase):
         self.im_backup = False
         self.to_backup = ""
         self.id = -1
-        Thread(target=self._client_Serve, daemon=True).start()
+
+        Thread(target=ServerTcp,args=(self.ip,self.dbport,self._process_request), daemon=True).start()
+        self.logger.info(f'Database Service Initiated at {self.ip}, {self.dbport}')
         while(True):
             sleep(10)
-            
-        
-    def _client_Serve(self):
-        with socket(type=SOCK_STREAM) as sock:
-            sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
-            sock.bind((self.ip,self.dbport))
-            sock.listen(10)
-            
-            self.logger.info(f'Database Service Initiated at {self.ip}, {self.dbport}')
-
-            while(True):
-                client, addr = sock.accept()
-                Thread(target=self._process_request,args=(client,addr),daemon=True).start()
     
     def _process_request(self, sock, addr):
         if not self.im_backup or self.to_backup == addr[0]:
@@ -77,6 +67,5 @@ class SharedDataBase(SimpleDataBase):
                 self.im_backup = True
                 self.to_backup = request['TO_BACKUP']
                 self.backup = ""
-
         sock.close()
 
