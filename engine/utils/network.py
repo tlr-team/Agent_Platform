@@ -141,7 +141,7 @@ def Udp_Message(msg, ip, port, function = Void):
 def Udp_Response(socket):
     return Decode_Response(socket.recvfrom(2048)[0])
 
-def ServerTcp(ip, port, client_fucntion, Stop_Condition = False, objeto = None):
+def ServerTcp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto = None):
     with socket(type=SOCK_STREAM) as sock:
         sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
         sock.listen(10)
@@ -149,15 +149,17 @@ def ServerTcp(ip, port, client_fucntion, Stop_Condition = False, objeto = None):
             if(objeto and Stop_Condition(objeto)):
                 break
             client, addr = sock.accept()
+            logger.debug(f'Recieved TCP Connection from f{addr}')
             Thread(target=client_fucntion,args=(client,addr),daemon=True).start()
 
-def ServerUdp(ip, port, client_fucntion, Stop_Condition = False, objeto = None):
+def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto = None):
     with socket(type=SOCK_DGRAM) as sock:
         sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
         while(True):
             if(objeto and Stop_Condition(objeto)):
                 break
             msg, addr = sock.recvfrom(1024)
+            logger.debug(f'Recieved UDP Connection from f{addr}')
             Thread(target=client_fucntion,args=(msg,addr),daemon=True).start()
 
 
