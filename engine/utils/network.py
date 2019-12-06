@@ -151,6 +151,15 @@ def ServerTcp(ip, port, client_fucntion, Stop_Condition = False, objeto = None):
             client, addr = sock.accept()
             Thread(target=client_fucntion,args=(client,addr),daemon=True).start()
 
+def ServerUdp(ip, port, client_fucntion, Stop_Condition = False, objeto = None):
+    with socket(type=SOCK_DGRAM) as sock:
+        sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
+        while(True):
+            if(objeto and Stop_Condition(objeto)):
+                break
+            msg, addr = sock.recvfrom(1024)
+            Thread(target=client_fucntion,args=(msg,addr),daemon=True).start()
+
 
 # FIXME aplicar hilos para concurrencia y un lock
 
