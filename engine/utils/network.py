@@ -174,7 +174,6 @@ class Discovering:
 
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
     def _listen(self, ip):
-        self.logger.info(f'Discover listen Daemon initiated')
         if ip not in self.partners:
             with self.mutex:
                 self.partners[ip] = self.ttl
@@ -189,7 +188,7 @@ class Discovering:
     #Hilo que va a refrescar el estado de la tabla
     def _refresh(self):
         self.logger.info(f'Discover refresh Daemon initiated')
-        while(true):
+        while(True):
             with self.mutex:
                 temp = {}
                 for name, val in self.partners.items():
