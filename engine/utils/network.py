@@ -174,27 +174,23 @@ class Discovering:
         self.mutex = Semaphore()
         self.time = time
         self.ttl = ttl
-        self.socket = socket(type=SOCK_DGRAM)
-        self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
-        self.socket.bind(('', port))
         self.logger = logger
-        self.logger.info(f'Discover Server Initiated at f{port}')
-        Thread(target=self._start,daemon=True,name='DiscoverServer')
 
     def Get_Partners(self):
         with self.mutex:
             return [a for a in self.partners.keys()]
 
     def _start(self):
+        self.logger.info(f'Discover Server Initiated at f{self.port}')
+        Thread(target=self._serve,daemon=True,name='DiscoverServer')
+    
+    def _serve(self):
         Thread(target=self._write, daemon=True).start()
         Thread(target=self._refresh, daemon=True).start()
-        while True:
-            _, addr = self.socket.recvfrom(1024)
-            self.logger.debug(f'Discovering:  Recieved connection from {addr}')
-            Thread(target=self._listen, args=(addr[0],), daemon=True).start()
+        ServerUdp('',self.port,self._listen, self.logger)
 
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
-    def _listen(self, ip):
+    def _listen(self, msg ,ip):
         if ip not in self.partners:
             with self.mutex:
                 self.partners[ip] = self.ttl
