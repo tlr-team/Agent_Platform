@@ -1,7 +1,7 @@
 import logging
 
 
-def getLogger(name='', level=logging.INFO):
+def getLogger(name='', level=logging.DEBUG):
     # Gets or creates a logger
     logger = logging.getLogger(name)
 
@@ -10,7 +10,9 @@ def getLogger(name='', level=logging.INFO):
 
     # define file handler and set formatter
     handler = logging.StreamHandler()
-    formatter = logging.Formatter('[%(asctime)s : %(levelname)s] %(message)s')
+    formatter = logging.Formatter(
+        '[%(asctime)s] - %(levelname)s - %(name)s.%(message)s', datefmt='%H:%M:%S'
+    )
     handler.setFormatter(formatter)
 
     # add file handler to logger
