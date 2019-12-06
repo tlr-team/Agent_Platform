@@ -127,7 +127,6 @@ def Tcp_Message(msg,ip,port, function = Tcp_Sock_Reader):
     with socket(type= SOCK_STREAM) as sock:
         sock.connect((ip,port))
         tmp = Encode_Request(msg)
-        print(len(tmp))
         sock.send(tmp)
         response = function(sock)
     return response
@@ -148,7 +147,6 @@ def Udp_Response(socket):
 # Clase para el algoritmo de descubrimiento
 class Discovering:
     def __init__(self, port, broadcast_addr, time=10, ttl = 3):
-        print('init')
         self.partners = {}
         self.port = port
         self.b_addr = broadcast_addr
@@ -167,10 +165,8 @@ class Discovering:
     def _start(self):
         Thread(target=self._write, daemon=True).start()
         Thread(target=self._refresh, daemon=True).start()
-        print('Server initated')
         while True:
             _, addr = self.socket.recvfrom(1024)
-            print('request recieved')
             Thread(target=self._listen, args=(addr[0],), daemon=True).start()
 
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
@@ -182,7 +178,6 @@ class Discovering:
     # Hilo que va a enviar cada cierto tiempo definido un mensaje broadcast para decir que esta vivo
     def _write(self):
         while True:
-            print("sended")
             Send_Broadcast_Message("Hello", self.b_addr, self.port)
             sleep(self.time)
 
