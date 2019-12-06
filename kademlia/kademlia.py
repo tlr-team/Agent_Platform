@@ -163,6 +163,47 @@ class KademliaProtocol(Service):
             if cont.id == key:
                 return cont.to_json()
         return None
+
+    def exposed_iter_store(self, key, value, store_time):
+        if not self.initialized:
+            self.logger.error(f'exposed_iter_store :: Node not initialized.')
+            return False
+
+        self.logger.debug(f'exposed_iter_store :: Strating iterative store.')
+        queue = Queue()
+        visited = set()
+        kclosest = KSortedQueue(self.k, self.contact.id)
+        #
+        queue.put(self.contact)
+        visited.add(self.contact)
+        kclosest.add(self.contact)
+        for contact in self.bucket_list.get_closest(key):
+            queue.put(contact)
+            visited.add(contact)
+            kclosest.add(contact)
+            if queue.qsize() >= self.a:
+                self.logger.debug(
+                    f'exposed_iter_store :: Alpha:{queue.qsize()} contacts to look for.'
+                )
+                break
+        container = ThreadRunner(
+            self.a,
+            queue.qsize,
+            target=self.store_lookup,
+            args=(key, queue, kclosest, visited, Lock()),
+        )
+        container.start()
+        success = 0
+
+        for cont in kclosest:
+            self.logger.debug(
+                f'exposed_iter_store :: do_store_value to {cont} of {key}:({value},{store_time}).'
+            )
+            if not self.do_store_value(cont, key, value, store_time)[0]:
+                self.logger.error(f'exposed_iter_store :: Unable to connect to {cont}.')
+            else:
+                success += 1
+        return success != 0
     # endregion
     def find_value_lookup(
         self,
