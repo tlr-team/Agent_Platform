@@ -26,15 +26,15 @@ def Void(time):
 
 class Leader_Election:
     def __init__(self, ip, mask, port, leader_function = Void):
+        self.logger = getLogger()
         self.brd = Get_Broadcast_Ip(ip,mask)
-        self.discover = Discovering(port,self.brd,3,8)
+        self.discover = Discovering(port,self.brd,self.logger,3,8)
         self.mask = mask
         self.ip = ip
         self.im_leader = False
         self.iwas_leader = False
         self.leader = None
         self.leader_function = leader_function
-        self.logger = getLogger()
         Thread(target=self._check_leader,daemon = True).start()
         self.discover._start()
         while(True):

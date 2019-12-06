@@ -146,7 +146,7 @@ def Udp_Response(socket):
 
 # Clase para el algoritmo de descubrimiento
 class Discovering:
-    def __init__(self, port, broadcast_addr, time=10, ttl = 3):
+    def __init__(self, port, broadcast_addr, logger, time=10, ttl = 3):
         self.partners = {}
         self.port = port
         self.b_addr = broadcast_addr
@@ -156,6 +156,8 @@ class Discovering:
         self.socket = socket(type=SOCK_DGRAM)
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
         self.socket.bind(('', port))
+        self.logger = logger
+        self.logger.info(f'Discover Server Initiated at f{port}')
         Thread(target=self._start,daemon=True,name='DiscoverServer')
 
     def Get_Partners(self):
@@ -167,27 +169,32 @@ class Discovering:
         Thread(target=self._refresh, daemon=True).start()
         while True:
             _, addr = self.socket.recvfrom(1024)
+            self.logger.debug(f'Discovering:  Recieved connection from {addr}')
             Thread(target=self._listen, args=(addr[0],), daemon=True).start()
 
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
     def _listen(self, ip):
+        self.logger.info(f'Discover listen Daemon initiated')
         if ip not in self.partners:
             with self.mutex:
                 self.partners[ip] = self.ttl
 
     # Hilo que va a enviar cada cierto tiempo definido un mensaje broadcast para decir que esta vivo
     def _write(self):
+        self.logger.info(f'Discover write Daemon initiated')
         while True:
             Send_Broadcast_Message("Hello", self.b_addr, self.port)
             sleep(self.time)
 
     #Hilo que va a refrescar el estado de la tabla
     def _refresh(self):
-        with self.mutex:
-            temp = {}
-            for name, val in self.partners.items():
-                if val > 1:
-                    temp[name] = val - 1
-            self.partners = temp
-        sleep(self.time)
+        self.logger.info(f'Discover refresh Daemon initiated')
+        while(true):
+            with self.mutex:
+                temp = {}
+                for name, val in self.partners.items():
+                    if val > 1:
+                        temp[name] = val - 1
+                self.partners = temp
+            sleep(self.time)
 
