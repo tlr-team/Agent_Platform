@@ -126,6 +126,43 @@ class KademliaProtocol(Service):
         )
         return result
 
+    def exposed_iter_find_node(self, key: int):
+        if not self.initialized:
+            self.logger.error(f'exposed_iter_find_node :: Node not initialized.')
+            return False
+        if key == self.contact.id:
+            self.logger.debug(
+                f'exposed_iter_find_node :: The node.id({self.contact.id}) == key({key}).'
+            )
+            return self.contact.to_json()
+        self.logger.debug(f'exposed_iter_find_node :: Strating iterative find node.')
+        queue = Queue()
+        visited = set()
+        kclosest = KSortedQueue(self.k, self.contact.id)
+        #
+        queue.put(self.contact)
+        visited.add(self.contact)
+        kclosest.add(self.contact)
+        for contact in self.bucket_list.get_closest(key):
+            queue.put(contact)
+            visited.add(contact)
+            kclosest.add(contact)
+            if queue.qsize() >= self.a:
+                self.logger.debug(
+                    f'exposed_iter_find_node :: Alpha:{queue.qsize()} contacts to look for.'
+                )
+                break
+        container = ThreadRunner(
+            self.a,
+            queue.qsize,
+            target=self.find_node_lookup,
+            args=(key, queue, kclosest, visited, Lock()),
+        )
+        container.start()
+        for cont in kclosest:
+            if cont.id == key:
+                return cont.to_json()
+        return None
     # endregion
     def find_value_lookup(
         self,
