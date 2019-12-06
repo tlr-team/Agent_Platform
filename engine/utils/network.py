@@ -181,12 +181,12 @@ class Discovering:
             return [a for a in self.partners.keys()]
 
     def _start(self):
-        self.logger.info(f'Discover Server Initiated at f{self.port}')
         Thread(target=self._serve,daemon=True,name='DiscoverServer')
     
     def _serve(self):
         Thread(target=self._write, daemon=True).start()
         Thread(target=self._refresh, daemon=True).start()
+        self.logger.info(f'Discover Server Initiated at f{self.port}')
         ServerUdp('',self.port,self._listen, self.logger)
 
     # Hilo que va a recibir el mensaje de broadcast y procesarlo

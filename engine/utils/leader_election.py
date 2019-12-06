@@ -25,7 +25,7 @@ def Void(time):
 
 
 class Leader_Election:
-    def __init__(self, ip, mask, port, leader_function = Void):
+    def __init__(self, ip, mask, port):
         self.logger = getLogger()
         self.brd = Get_Broadcast_Ip(ip,mask)
         self.discover = Discovering(port,self.brd,self.logger,3,8)
@@ -34,11 +34,10 @@ class Leader_Election:
         self.im_leader = False
         self.iwas_leader = False
         self.leader = None
-        self.leader_function = leader_function
+        
+    def _start(self):
         Thread(target=self._check_leader,daemon = True).start()
         self.discover._start()
-        while(True):
-            sleep(5)
 
     def _check_leader(self, time = 10):
         self.logger.info(f'Leader Election: Check Leader Deamon Initiated')
@@ -60,14 +59,6 @@ class Leader_Election:
                     self.iwas_leader = False
             else:
                 self.leader = None
-            sleep(time)
-    
-    def _leader_action(self, time = 10):
-        self.logger.info(f'Leader Election: Leader Worker Deamon Initiated')
-        if self.im_leader:
-            thread = StoppableThread(target=self.leader_function,args=(time)).start()
-            thread.join()
-        else:
             sleep(time)
 
     def Im_Leader(self):
