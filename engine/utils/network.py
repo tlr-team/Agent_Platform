@@ -141,6 +141,16 @@ def Udp_Message(msg, ip, port, function = Void):
 def Udp_Response(socket):
     return Decode_Response(socket.recvfrom(2048)[0])
 
+def ServerTcp(ip, port, client_fucntion, Stop_Condition = False, objeto = None):
+    with socket(type=SOCK_STREAM) as sock:
+        sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
+        sock.listen(10)
+        while(True):
+            if(objeto and Stop_Condition(objeto)):
+                break
+            client, addr = sock.accept()
+            Thread(target=client_fucntion,args=(client,addr),daemon=True).start()
+
 
 # FIXME aplicar hilos para concurrencia y un lock
 
