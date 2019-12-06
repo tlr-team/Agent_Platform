@@ -127,6 +127,62 @@ class KademliaProtocol(Service):
         return result
 
     # endregion
+    def find_value_lookup(
+        self,
+        key: int,
+        queue: Queue,
+        kclosest,
+        visited: set,
+        most_recent_value,
+        queue_lock,
+        value_lock,
+    ):
+        contact = None
+        try:
+            self.logger.debug('find_value_lookup :: Getting a contact from the queue.')
+            contact = queue.get(timeout=1)
+        except Empty:
+            self.logger.debug('find_value_lookup :: Empty queue.')
+            return
+        self.logger.debug(f'find_value_lookup :: do_find_node to contact:{contact}.')
+        success, contacts = self.do_find_node(contact, key)
+        if not success:
+            self.logger.debug(f'find_value_lookup :: Unable to connect to {contact}.')
+            return
+        self.logger.debug(
+            f'find_value_lookup :: do_find_value key({key}) to {contact}.'
+        )
+        success, value_time = self.do_find_value(contact, key)
+        if not success:
+            self.logger.debug(f'find_value_lookup :: Unable to connect to {contact}.')
+            return
+        self.update_contacts(contact)
+
+        if value_time:
+            value, time = value_time
+            with value_lock:
+                most_recent_value[0], most_recent_value[1] = (
+                    value,
+                    time if time > most_recent_value[1] else most_recent_value,
+                )
+                self.logger.debug(
+                    f'find_value_lookup :: Update value key({key}) to {most_recent_value}.'
+                )
+        self.logger.debug(f'find_value_lookup :: Search key({key}) in contacts.')
+        for contact_finded in contacts:
+            if not self.do_ping(contact_finded)[0]:
+                self.logger.debug(f'find_value_lookup :: Unable to connect to {contact_finded}.')
+                continue
+            self.update_contacts(contact_finded)
+            queue_lock.acquire()
+            if not contact_finded in visited:
+                self.logger.debug(
+                    f'find_value_lookup :: Adding {contact_finded} to pendings.'
+                )
+                visited.add(contact_finded)
+                kclosest.add(contact_finded)
+                queue.put(contact_finded)
+            queue_lock.release()
     def connect_to(self, contact):
         self.logger.debug(f'connect_to :: trying Contact:{contact}')
         connection = rpyc_connect(contact.ip, contact.port, timeout=1)
@@ -134,7 +190,7 @@ class KademliaProtocol(Service):
         self.logger.debug(f'connect_to :: Added Contact:{contact}')
         return connection
 
-    # region Do actions
+    # region Do functions
     @retry(1, 1, message='do_ping(retry) :: Fail to connect')
     def do_ping(self, reciever: Contact):
         self.logger.debug(f'do_ping :: Node not initialized.')
