@@ -41,6 +41,7 @@ class Leader_Election:
             sleep(5)
 
     def _check_leader(self, time = 10):
+        self.logger.info(f'Leader Election: Check Leader Deamon Initiated')
         while(True):
             ips = self.discover.Get_Partners()
             if len(self.discover.partners): 
@@ -50,9 +51,11 @@ class Leader_Election:
                     self.logger.info(f'New Leader {self.leader}')
             if self.leader:
                 if self.ip == self.leader:
+                    self.logger.debug(f'Im the Leader')
                     self.im_leader = True
                     self.iwas_leader = True
                 else:
+                    self.logger.debug(f'Leader: {self.leader}')
                     self.im_leader = False
                     self.iwas_leader = False
             else:
@@ -60,6 +63,7 @@ class Leader_Election:
             sleep(time)
     
     def _leader_action(self, time = 10):
+        self.logger.info(f'Leader Election: Leader Worker Deamon Initiated')
         if self.im_leader:
             thread = StoppableThread(target=self.leader_function,args=(time)).start()
             thread.join()
