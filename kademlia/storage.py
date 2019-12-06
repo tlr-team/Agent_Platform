@@ -1,6 +1,3 @@
-from .dht import Id
-
-
 class StorageManager:  # TODO: Implements
     '''
     Define operations in dht's Node space assigned and manage consults, downloads and uploads.
@@ -9,11 +6,11 @@ class StorageManager:  # TODO: Implements
     def __init__(self):
         pass
 
-    def contains(self, key: Id):
+    def contains(self, key):
         raise NotImplementedError()
         # return boolean
 
-    def try_get_value(self, key: Id):
+    def try_get_value(self, key):
         raise NotImplementedError()
         # return (boolean,null/str)
 
@@ -21,11 +18,11 @@ class StorageManager:  # TODO: Implements
         raise NotImplementedError()
         # return str
 
-    def get_timestamp(self, key: Id):
+    def get_timestamp(self, key):
         raise NotImplementedError()
         # return timestamp
 
-    def set(self, key: Id, val: str, expiration_time=0):
+    def set(self, key: int, val: str, expiration_time=0):
         raise NotImplementedError()
 
     def get_expiration_timesec(self, key):

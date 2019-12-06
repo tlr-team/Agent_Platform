@@ -2,6 +2,7 @@ from rpyc import VoidService, SocketStream, connect_stream
 from time import monotonic
 from threading import Lock, Thread, Semaphore
 from engine.utils.logger import getLogger
+from time import sleep
 
 
 def to_str(val: int, endian='little'):
@@ -24,48 +25,31 @@ def to_boolean(val: int, endian='little'):
     return [b == '1' for b in to_str(val, endian=endian)]
 
 
-class Node:
-    def __init__(self, value, tree_constant):
-        self.id = value.id
-        self.value = value
-
-    def __lt__(self, other):
-        return self.value < other.value
-
-    def __le__(self, other):
-        return self.value <= other.value
-
-    def __eq__(self, other):
-        return self.value == other.value
-
-    def __ne__(self, other):
-        return self.value != other.value
-
-    def __gt__(self, other):
-        return self.value > other.value
-
-    def __ge__(self, other):
-        return self.value >= other.value
-
-
-class SortedQueue:
-    def __init__(self, k, main_id):
+class KSortedQueue:
+    def __init__(self, k, id):
         self.k = k
         self.queue = []
-        self.mid = main_id
+        self.mid = id
+        self.lock = Lock()
 
-    def __add(self, nde: Node):
-        for i in range(0, len(self.queue)):
-            if nde < self.queue[i]:
-                self.queue.insert(i, nde)
+    def add(self, node):
+        self.lock.acquire()
+        for i, cur_node in enumerate(self.queue):
+            if node.id ^ self.mid < cur_node.id ^ self.mid:
+                self.queue.insert(i, node)
+                break
+        else:
+            if len(self.queue) < self.k:
+                self.queue.append(node)
         if len(self.queue) > self.k:
             self.queue.pop()
+        self.lock.release()
 
-    def add(self, _id):
-        self.add(Node(_id, self.mid))
-
-    def getall(self):
-        return [i.value for i in self.queue]
+    def __iter__(self):
+        self.lock.acquire()
+        for node in self.queue:
+            yield node.value
+        self.lock.release()
 
 
 def rpyc_connect(

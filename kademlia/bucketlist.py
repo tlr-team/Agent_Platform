@@ -1,7 +1,7 @@
 from .kbucket import KBucket
 from .contact import Contact
 from threading import Lock
-from ..engine.utils.logger import getLogger
+from engine.utils.logger import getLogger
 from .utils import to_str
 
 
