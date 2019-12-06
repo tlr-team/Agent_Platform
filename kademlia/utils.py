@@ -60,6 +60,46 @@ def rpyc_connect(
     return connect_stream(s, service=VoidService, config=config)
 
 
+class ThreadRunner:
+    def __init__(self, alpha, cond, target, args=(), kwargs=None, time_to_sleep=0.1):
+        self.condition = cond
+        self.target = target
+        self.args = args
+        self.kwargs = kwargs or {}
+        self.time_to_sleep = time_to_sleep
+        self.sem_alpha = Semaphore(value=alpha)
+        self.count = 0
+        self.count_lock = Lock()
+        self.logger = getLogger(name='Threader')
+
+        def alpha_running(*_args, **_kwargs):
+            self.sem_alpha.acquire()
+            target(*_args, **_kwargs)
+            with self.count_lock:
+                self.count -= 1
+            self.sem_alpha.release()
+
+        self.target = alpha_running
+
+    def run_1by1(self):
+        while True:
+            condition = self.condition()
+            self.logger.debug(f'start :: Start condition={condition}')
+            if condition:
+                with self.count_lock:
+                    self.count += 1
+                t = Thread(target=self.target, args=self.args, kwargs=self.kwargs)
+                self.logger.debug(f'start :: Running ({self.count}) threads.')
+                t.start()
+                t.join()
+            else:
+                self.logger.debug(f'start :: Finish all threads.')
+                return
+
+    def start(self):
+        self.run_1by1()
+
+
 class FakeNTP:
     @staticmethod
     def now():
