@@ -11,7 +11,7 @@ def getLogger(name='', level=logging.DEBUG):
     # define file handler and set formatter
     handler = logging.StreamHandler()
     formatter = logging.Formatter(
-        '[%(asctime)s %(levelname)s - %(name)s.%(message)s', datefmt='%H:%M:%S'
+        '[%(asctime)s] - %(levelname)s - %(name)s.%(message)s', datefmt='%H:%M:%S'
     )
     handler.setFormatter(formatter)
 
