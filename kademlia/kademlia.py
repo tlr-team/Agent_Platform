@@ -375,8 +375,9 @@ class KademliaProtocol(Service):
                 queue.put(contact_finded)
                 kclosest.add(contact_finded)
             lock.release()
+
     def connect_to(self, contact):
-        self.logger.debug(f'connect_to :: trying Contact:{contact}')
+        self.logger.debug(f'connect_to :: trying to connect to {contact}.')
         connection = rpyc_connect(contact.ip, contact.port, timeout=1)
         connection.ping()
         self.logger.debug(f'connect_to :: Added Contact:{contact}')
@@ -437,3 +438,6 @@ class KademliaProtocol(Service):
             bucket.lock.release()
         self.logger.debug(f'update_contacts :: Done.')
         return
+
+    # endregion
+
