@@ -204,6 +204,50 @@ class KademliaProtocol(Service):
             else:
                 success += 1
         return success != 0
+
+    def exposed_iter_find_value(self, key):
+        if not self.initialized:
+            self.logger.error(f'exposed_iter_find_value :: Node not initialized.')
+            return None
+
+        self.logger.debug(f'exposed_iter_find_value :: Strating iterative find value.')
+        queue = Queue()
+        visited = set()
+        kclosest = KSortedQueue(self.k, self.contact.id)
+        most_recent_value = [None, -1]
+        #
+        queue.put(self.contact)
+        visited.add(self.contact)
+        kclosest.add(self.contact)
+        for contact in self.bucket_list.get_closest(key):
+            queue.put(contact)
+            visited.add(contact)
+            kclosest.add(contact)
+            if queue.qsize() >= self.a:
+                self.logger.debug(
+                    f'exposed_iter_find_value :: Alpha:{queue.qsize()} contacts to look for.'
+                )
+                break
+
+        container = ThreadRunner(
+            self.a,
+            queue.qsize,
+            target=self.find_value_lookup,
+            args=(key, queue, kclosest, visited, most_recent_value, Lock(), Lock()),
+        )
+        container.start()
+
+        value, time = most_recent_value
+        if value is None:
+            return None
+        for cont in kclosest:
+            self.logger.debug(
+                f'exposed_iter_find_value :: Storing {key},({most_recent_value}) in Contact:{cont}.'
+            )
+            if not self.do_store_value(cont, key, value, time)[0]:
+                self.logger.debug(
+                    f'exposed_iter_find_value :: Success stored in {contact}'
+                )
     # endregion
     def find_value_lookup(
         self,
