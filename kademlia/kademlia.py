@@ -1,11 +1,13 @@
 from .contact import Contact
 from .bucketlist import BucketList
 from .storage import StorageManager  # TODO: implement the SorageManager
-from threading import Thread, Semaphore, Lock
+from threading import Thread, Lock
 from engine.utils.logger import getLogger
-from rpyc import Service
-from .utils import rpyc_connect, FakeNTP
-from ..engine.utils.network import retry
+from rpyc import Service,discover
+from rpyc.utils.factory import DiscoveryError 
+from .utils import rpyc_connect, KSortedQueue, ThreadRunner
+from engine.utils.network import retry
+from queue import Queue, Empty
 from socket import (
     socket,
     SOCK_DGRAM,
@@ -17,12 +19,19 @@ from socket import (
 
 DefaultKSize = 3  # FIXME: Put a correct value
 DefaultBSize = 160
+DefaultAlfaSize = 3
 
 
 class KademliaProtocol(Service):
-    def __init__(self, storage: StorageManager, b=DefaultBSize, k=DefaultKSize):
+    def __init__(
+        self,
+        storage=StorageManager(),
+        b=DefaultBSize,
+        k=DefaultKSize,
+        a=DefaultAlfaSize,
+    ):
         super(KademliaProtocol, self).__init__()
-        self.k, self.b = k, b
+        self.k, self.b, self.a = k, b, a
         self.storage_manager = storage  # TODO: use it
         self.lock = Lock()
         self.service_port = 9000
@@ -30,6 +39,7 @@ class KademliaProtocol(Service):
         self.db_lock = Lock()
         self.logger = getLogger(name='KademliaProtocol')
         self.initialized = False
+        self.started = False
         self.bucket_list: BucketList
         self.contact: Contact
 
@@ -101,7 +111,7 @@ class KademliaProtocol(Service):
     def exposed_find_node(self, sender: Contact, key: int):
         if not self.initialized:
             self.logger.error(f'exposed_find_node :: Node not initialized.')
-            return False
+            return None
         sender = Contact.from_json(sender)
         self.update_contacts(sender)
         self.logger.debug(f'exposed_find_node :: Requested by {sender}.')
