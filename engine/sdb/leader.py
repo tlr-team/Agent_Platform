@@ -110,20 +110,10 @@ class DbLeader(Leader_Election):
                     with self.deadlock:
                         self.deadlist.append(self.database[i][j])
 
-    #metodo de la freelist
-    def _assign_work(self, time):
-        while(True):
-            if len(self.freelist):
-                with self.freelock:
-                    while(len(self.freelist)):
-                        ip = self.freelist.pop()
-                        
-                        pass
 
-            sleep(time)
 
     #region database
-    def _insert(self, ip, id = None):
+    def _leinsert(self, ip, id = None):
         with self.dblock:
             self.node_count += 1
             if not id:
@@ -141,7 +131,7 @@ class DbLeader(Leader_Election):
                         self.database[id][i] = ip
                         return (key, i)
 
-    def _delete(self, ip):
+    def _ledelete(self, ip):
         with self.dblock:
             self.node_count -= 1
             for key in self.database:
@@ -154,7 +144,7 @@ class DbLeader(Leader_Election):
                                 self.main_count -= 1
                         return (key, i)
 
-    def _get_backup(self):
+    def _leget_backup(self):
         with self.dblock:
             for key in self.database:
                 if self.database[key][1] != None:
