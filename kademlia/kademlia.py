@@ -305,6 +305,42 @@ class KademliaProtocol(Service):
                 kclosest.add(contact_finded)
                 queue.put(contact_finded)
             queue_lock.release()
+
+
+
+    def store_lookup(self, key: int, queue: Queue, kclosest, visited: set, lock: Lock):
+        contact = None
+        try:
+            self.logger.debug('store_lookup :: Getting a contact from the queue.')
+            contact = queue.get(timeout=1)
+        except Empty:
+            self.logger.debug('store_lookup :: Empty queue.')
+            return
+        self.logger.debug(f'store_lookup :: do_find_node to contact:{contact}.')
+        success, contacts = self.do_find_node(contact, key)
+        if not success:
+            self.logger.debug(f'store_lookup :: Unable to connect to {contact}.')
+            return
+        self.update_contacts(contact)
+        contacts = map(Contact.from_json, contacts)
+        for contact_finded in contacts:
+            if contact_finded == self.contact:
+                continue
+            if not self.do_ping(contact_finded)[0]:
+                self.logger.debug(
+                    f'store_lookup :: Unable to connect to {contact_finded}.'
+                )
+                continue
+            self.update_contacts(contact_finded)
+            lock.acquire()
+            if not contact_finded in visited:
+                self.logger.debug(
+                    f'store_lookup :: Adding {contact_finded} to pendings.'
+                )
+                visited.add(contact_finded)
+                queue.put(contact_finded)
+                kclosest.add(contact_finded)
+            lock.release()
     def connect_to(self, contact):
         self.logger.debug(f'connect_to :: trying Contact:{contact}')
         connection = rpyc_connect(contact.ip, contact.port, timeout=1)
