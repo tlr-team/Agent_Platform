@@ -11,7 +11,7 @@ from ..utils.logger import getLogger
 from ..utils.leader_election import Leader_Election
 
 class SharedDataBase(SimpleDataBase):
-    def __init__(self, ip, mask, dbport, leaderelectionport):
+    def __init__(self, ip, mask, dbport):
         SimpleDataBase.__init__(self)
         self.logger = getLogger()
         self.ip = ip

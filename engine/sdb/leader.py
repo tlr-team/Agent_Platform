@@ -60,9 +60,8 @@ class LDatabase:
 
 
 class DbLeader(Leader_Election):
-    def __init__(self, ip, mask, port, leport):
+    def __init__(self, ip, mask, leport):
         self.ip = ip
-        self.port = port
         self.le = Leader_Election(ip, mask, leport)
         self.database = {}
         self.freelist = []

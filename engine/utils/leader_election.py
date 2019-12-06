@@ -55,8 +55,8 @@ class Leader_Election:
                     self.iwas_leader = True
                 else:
                     self.logger.debug(f'Leader: {self.leader}')
+                    self.iwas_leader = self.im_leader
                     self.im_leader = False
-                    self.iwas_leader = False
             else:
                 self.leader = None
             sleep(time)
