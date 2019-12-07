@@ -1,27 +1,45 @@
-import logging
+from logging import (
+    getLogger as _getLogger,
+    StreamHandler,
+    Formatter,
+    basicConfig,
+    debug,
+    error,
+    exception,
+    info,
+    ERROR,
+    DEBUG,
+    INFO,
+    root,
+)
 
 
-def getLogger(name='', level=logging.DEBUG):
+def setup_logger(name='root', logfile='', level=DEBUG):
+    root.name = name or 'root'
+
+    basicConfig(
+        filename=f'log/{logfile or name}.log',
+        filemode='w',
+        level=level,
+        format='%(asctime)+1s %(levelname)-9s- %(name)+10s: \'%(funcName)s\' %(message)s',
+        datefmt='%H:%M:%S',
+    )
+
+
+def getLogger(name='', level=DEBUG):
     # Gets or creates a logger
-    logger = logging.getLogger(name)
+    logger = _getLogger(name)
 
     # set log level
     logger.setLevel(level)
 
     # define file handler and set formatter
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter(
-        '[%(asctime)s] - %(levelname)s - %(name)s.%(message)s', datefmt='%H:%M:%S'
+    handler = StreamHandler()
+    formatter = Formatter(
+        fmt='%(asctime)-1s %(levelname)-9s- %(name)+10s: %(message)s',
+        datefmt='%H:%M:%S',
     )
     handler.setFormatter(formatter)
 
-    # add file handler to logger
     logger.addHandler(handler)
     return logger
-
-    # Logs
-    # logger.debug('A debug message')
-    # logger.info('An info message')
-    # logger.warning('Something is not right.')
-    # logger.error('A Major error has happened.')
-    # logger.critical('Fatal error. Cannot continue')
