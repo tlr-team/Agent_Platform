@@ -154,8 +154,8 @@ def Udp_Response(socket):
 def ServerTcp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto = None):
     with socket(type=SOCK_STREAM) as sock:
         sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
-        sock.listen(10)
         sock.bind((ip,port))
+        sock.listen(10)
         while(True):
             if(objeto and Stop_Condition(objeto)):
                 break

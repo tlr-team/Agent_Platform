@@ -79,9 +79,10 @@ class LESDB(DbLeader, SharedDataBase):
             if self.im_leader:
                 self.logger.debug('Im Leader Now')
                 thread_list.append(Thread(target=self._check, args=(10), name='Live or Dead Checker'))
+                thread_list.append(Thread(target=self._world_serve, name='World Server Daemon'))
             else: 
                 self.logger.debug('Im Worker Now')
-                thread_list.append(Thread(target=ServerTcp,args=(self.ip,self.dbport,self._process_request, lambda x: x.im_leader, self), daemon=True))
+                thread_list.append(Thread(target=ServerTcp,args=(self.ip,self.dbport,self._process_request, lambda x: x.im_leader, self)))
 
             for i in thread_list:
                 i.start()
