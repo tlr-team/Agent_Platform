@@ -3,6 +3,7 @@ from time import sleep
 from json import dumps, loads
 from .network import Get_Subnet_Host_Number,Send_Broadcast_Message,Decode_Response,Encode_Request,Get_Broadcast_Ip,Get_Subnet_Host_Number,ServerUdp
 from threading import Thread, Event, Semaphore
+from multiprocessing import Process, Lock, Value
 from .logger import getLogger
 
 class StoppableThread(Thread):
@@ -74,7 +75,9 @@ class Leader_Election(Discovering):
         Discovering.__init__(self, port, Get_Broadcast_Ip(ip,mask), logger,3,8)
         self.mask = mask
         self.ip = ip
-        self.im_leader = False
+        self.leader_dhared_memory = Value('i',0)
+        self.leaderprocesslock = Lock()
+        self.leaderthreadlock = Semaphore()
         self.iwas_leader = False
         self.leader = None
         self.lelogger = logger
@@ -105,8 +108,19 @@ class Leader_Election(Discovering):
                 self.leader = None
             sleep(time)
 
-    def Im_Leader(self):
-        return self.im_leader
+    @property
+    def im_leader(self):
+        with self.leaderthreadlock:
+            with self.leaderprocesslock:
+                return self.leader_dhared_memory.value
+
+    @im_leader.setter
+    def im_leader(self, val):
+        with self.leaderthreadlock:
+            with self.leaderprocesslock:
+                self.leader_dhared_memory.value = int(val)
+
+    
 
     def Leader(self):
         return self.leader

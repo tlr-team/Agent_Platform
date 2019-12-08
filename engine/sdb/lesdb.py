@@ -9,6 +9,7 @@ from ..utils.network import Tcp_Message, Void, Tcp_Sock_Reader, ServerTcp
 from ..utils.logger import getLogger
 from hashlib import sha1
 from threading import Thread
+from multiprocessing import Lock, Process, Value
 
 
 class LESDB(DbLeader, SharedDataBase):
@@ -78,11 +79,13 @@ class LESDB(DbLeader, SharedDataBase):
             thread_list = []
             if self.im_leader:
                 self.logger.debug('Im Leader Now')
-                thread_list.append(Thread(target=self._check, args=(10), name='Live or Dead Checker'))
+                time = 10
+                thread_list.append(Thread(target=self._check, args=(time,), name='Live or Dead Checker'))
                 thread_list.append(Thread(target=self._world_serve, name='World Server Daemon'))
             else: 
                 self.logger.debug('Im Worker Now')
-                thread_list.append(Thread(target=ServerTcp,args=(self.ip,self.dbport,self._process_request, lambda x: x.im_leader, self)))
+                #thread_list.append(Thread(target=ServerTcp,args=(self.ip,self.dbport,self._process_request, self.logger, lambda x: x.im_leader, self)))
+                thread_list.append(Process(target=Worker_Process,args=(self.ip,self.port, self._process_request, validate, self.leader_dhared_memory, self.leaderprocesslock)))
 
             for i in thread_list:
                 i.start()
@@ -92,5 +95,20 @@ class LESDB(DbLeader, SharedDataBase):
             self.logger.debug(f'Changed Function')
         pass
 
+def Worker_Process(ip, port, function, shared_memory_func, shared_memory, lock):
+    logger = getLogger()
+    logger.warning(f'Ha iniciado')
+    Thread(target=ServerTcp,args=(ip, port, function, logger, shared_memory_func, shared_memory, lock),daemon=True, name='Server').start()
+    while(True):
+        if shared_memory_func(shared_memory, lock):
+            logger.warning(f'Se cumplio la condicion')
+            exit()
+        logger.warning(f'valor de la memoria compartida, {shared_memory.value}')
+        sleep(1)
 
-
+def validate(shared, lock = None):
+    if lock:
+        with lock:
+            return shared.value
+    else:
+        return shared.value
