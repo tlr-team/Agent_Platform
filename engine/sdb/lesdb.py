@@ -56,7 +56,7 @@ class LESDB(DbLeader, SharedDataBase):
 
     def _world_serve(self):
         self.logger.info(f'World Server Initiated at {self.world_port}')
-        ServerTcp(self.ip,self.world_port,self._world_attend,self.logger,lambda x: x.im_leader,self)
+        ServerTcp(self.ip,self.world_port,self._world_attend,self.logger,lambda x: not x.im_leader,self)
 
     def _world_attend(self, sock, addr):
         message = Tcp_Sock_Reader(sock)
@@ -86,9 +86,13 @@ class LESDB(DbLeader, SharedDataBase):
             if self.im_leader:
                 self.logger.debug('Im Leader Now')
                 time = 10
+                self.logger.debug(f'live or dead checker initiated')
                 thread_list.append(Thread(target=self._check, args=(time,), name='Live or Dead Checker'))
+                self.logger.debug(f'world server initiated')
                 thread_list.append(Thread(target=self._world_serve, name='World Server Daemon'))
+                self.logger.debug(f'job assigner initiated')
                 thread_list.append(Thread(target=self._assign_work,args=(time,),name='Job Assigner'))
+                self.logger.debug(f'Dead Burrier')
                 thread_list.append(Thread(target=self._remove_dead,args=(time,),name='Dead Burrier'))
             else: 
                 self.logger.debug('Im Worker Now')
@@ -111,7 +115,7 @@ def Worker_Process(ip, port, function, shared_memory_func, shared_memory, lock):
         if shared_memory_func(shared_memory, lock):
             logger.debug(f'Im not worker animore')
             exit()
-        #logger.warning(f'valor de la memoria compartida, {shared_memory.value}')
+        logger.warning(f'valor de la memoria compartida, {shared_memory.value}')
         sleep(1)
 
 def validate(shared, lock = None):

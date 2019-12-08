@@ -68,7 +68,7 @@ class Discovering:
                         temp[name] = val - 1
                 self.partners = temp
                 self.disclogger.debug(f'partnerts :{temp}')
-            sleep(self.time)
+            sleep(2*self.time)
 
 class Leader_Election(Discovering):
     def __init__(self, ip, mask, port, logger = getLogger()):

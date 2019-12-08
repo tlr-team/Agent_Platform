@@ -158,14 +158,16 @@ def Udp_Response(socket):
     return Decode_Response(socket.recvfrom(2048)[0])
 
 def ServerTcp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto = None, lock = None):
+    logger.info(f"Server TCP initiated at {ip,port}")
     with socket(type=SOCK_STREAM) as sock:
         sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
         sock.bind((ip,port))
         sock.listen(10)
         while(True):
-            if objeto and Stop_Condition(objeto) if not lock else Stop_Condition(objeto,lock):
+            if objeto and (Stop_Condition(objeto) if not lock else Stop_Condition(objeto,lock)):
+                logger.info("NO server anymore")
                 break
-            print("Condicion TCP: ", Stop_Condition(objeto) if objeto != None else None)
+            #print("Condicion TCP: ", Stop_Condition(objeto) if objeto != None else None)
             client, addr = sock.accept()
             logger.debug(f'Recieved TCP Connection from {addr}')
             Thread(target=client_fucntion,args=(client,addr),daemon=True).start()
@@ -178,7 +180,7 @@ def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto 
             if(objeto and Stop_Condition(objeto)):
                 break
             msg, addr = sock.recvfrom(1024)
-            logger.debug(f'Recieved UDP Connection from {addr}')
+            #logger.debug(f'Recieved UDP Connection from {addr}')
             Thread(target=client_fucntion,args=(msg,addr),daemon=True).start()
 
 
