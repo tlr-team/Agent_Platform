@@ -6,15 +6,17 @@ from .leader import DbLeader
 from .sdb import SharedDataBase
 from time import sleep
 from ..utils.network import Tcp_Message, Void, Tcp_Sock_Reader, ServerTcp
+from ..utils.logger import getLogger
 from hashlib import sha1
 from threading import Thread
 
 
 class LESDB(DbLeader, SharedDataBase):
-    def __init__(self, ip, mask, dbport, leport, world_port):
-        SharedDataBase.__init__(self, ip, mask, dbport)
-        DbLeader.__init__(self, ip, mask , leport)
+    def __init__(self, ip, mask, dbport, leport, world_port, logger=getLogger()):
+        SharedDataBase.__init__(self, ip, mask, dbport, logger)
+        DbLeader.__init__(self, ip, mask , leport, logger)
         self.world_port = world_port
+        self.logger = logger
 
     def _assign_work(self, time):
         while(True):
@@ -69,8 +71,8 @@ class LESDB(DbLeader, SharedDataBase):
         return self.database[ID]
 
     def serve(self,time):
-        Thread(target=self._check_leader,daemon = True, name='Leader Election Daemon').start()
         Thread(target=self._serve,daemon=True,name='Discover Server Daemon').start()
+        Thread(target=self._check_leader,daemon = True, name='Leader Election Daemon').start()
 
         while(True):
             thread_list = []

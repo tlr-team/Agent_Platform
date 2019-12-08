@@ -3,6 +3,7 @@ Leader Db File
 '''
 
 from ..utils.leader_election import Leader_Election, StoppableThread
+from ..utils.logger import getLogger
 from threading import Lock
 from ..utils.logger import getLogger
 from time import sleep
@@ -61,8 +62,8 @@ class LDatabase:
 
 
 class DbLeader(Leader_Election):
-    def __init__(self, ip, mask, leport):
-        Leader_Election.__init__(self,ip,mask,leport)
+    def __init__(self, ip, mask, leport, logger = getLogger):
+        Leader_Election.__init__(self,ip,mask,leport, logger)
         self.database = {}
         self.freelist = []
         self.deadlist = []
@@ -71,6 +72,7 @@ class DbLeader(Leader_Election):
         self.dblock = Lock()
         self.freelock = Lock()
         self.deadlock = Lock()
+        self.dbleaderlogger = logger
 
     def _dbleader_start(self, time):
         Thread(target=self._check, args=(time), daemon=True, name="Leader Checker")
@@ -97,6 +99,7 @@ class DbLeader(Leader_Election):
                         present = True
                         break
             if not present:
+                self.dbleaderlogger.debug(f' new ip found {i}')
                 if not i in self.database[-1]:
                     with self.freelock:
                         self.freelist.append(i)
@@ -107,6 +110,7 @@ class DbLeader(Leader_Election):
             for j in range(0,2):
                 if self.database[i][j] and self.database[i][j] not in lista:
                     with self.deadlock:
+                        self.dbleaderlogger.debug(f'ip lost {self.database[i][j]}')
                         self.deadlist.append(self.database[i][j])
 
 

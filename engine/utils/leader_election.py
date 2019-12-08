@@ -24,14 +24,14 @@ def Void(time):
     pass
 
 class Discovering:
-    def __init__(self, port, broadcast_addr, logger, time=10, ttl = 3):
+    def __init__(self, port, broadcast_addr, logger = getLogger(), time=10, ttl = 3):
         self.partners = {}
         self.port = port
         self.b_addr = broadcast_addr
         self.mutex = Semaphore()
         self.time = time
         self.ttl = ttl
-        self.logger = logger
+        self.disclogger = logger
 
     def Get_Partners(self):
         with self.mutex:
@@ -40,8 +40,8 @@ class Discovering:
     def _serve(self):
         Thread(target=self._write, daemon=True).start()
         Thread(target=self._refresh, daemon=True).start()
-        self.logger.info(f'Discover Server Initiated at f{self.port}')
-        ServerUdp('',self.port,self._listen, self.logger)
+        self.disclogger.info(f'Discover Server Initiated at f{self.port}')
+        ServerUdp('',self.port,self._listen, self.disclogger)
 
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
     def _listen(self, msg ,ip):
@@ -51,14 +51,14 @@ class Discovering:
 
     # Hilo que va a enviar cada cierto tiempo definido un mensaje broadcast para decir que esta vivo
     def _write(self):
-        self.logger.info(f'Discover write Daemon initiated')
+        self.disclogger.info(f'Discover write Daemon initiated')
         while True:
             Send_Broadcast_Message("Hello", self.b_addr, self.port)
             sleep(self.time)
 
     #Hilo que va a refrescar el estado de la tabla
     def _refresh(self):
-        self.logger.info(f'Discover refresh Daemon initiated')
+        self.disclogger.info(f'Discover refresh Daemon initiated')
         while(True):
             with self.mutex:
                 temp = {}
@@ -69,34 +69,35 @@ class Discovering:
             sleep(self.time)
 
 class Leader_Election(Discovering):
-    def __init__(self, ip, mask, port):
-        Discovering.__init__(self, port, Get_Broadcast_Ip(ip,mask), getLogger(),3,8)
+    def __init__(self, ip, mask, port, logger = getLogger()):
+        Discovering.__init__(self, port, Get_Broadcast_Ip(ip,mask), logger,3,8)
         self.mask = mask
         self.ip = ip
         self.im_leader = False
         self.iwas_leader = False
         self.leader = None
+        self.lelogger = logger
         
     def _start(self):
         Thread(target=self._check_leader,daemon = True, name='Leader Election Daemon').start()
         Thread(target=self._serve,daemon=True,name='DiscoverServer').start()
 
     def _check_leader(self, time = 10):
-        self.logger.info(f'Leader Election: Check Leader Daemon Initiated')
+        self.lelogger.info(f'Leader Election: Check Leader Daemon Initiated')
         while(True):
             ips = self.Get_Partners()
             if len(self.partners): 
                 ips.sort(key=lambda x : Get_Subnet_Host_Number(x,self.mask))
                 if self.leader != ips[-1]:
                     self.leader = ips[-1]
-                    self.logger.info(f'New Leader {self.leader}')
+                    self.lelogger.info(f'New Leader {self.leader}')
             if self.leader:
                 if self.ip == self.leader:
-                    self.logger.debug(f'Im the Leader')
+                    self.lelogger.debug(f'Im the Leader')
                     self.im_leader = True
                     self.iwas_leader = True
                 else:
-                    self.logger.debug(f'Leader: {self.leader}')
+                    self.lelogger.debug(f'Leader: {self.leader}')
                     self.iwas_leader = self.im_leader
                     self.im_leader = False
             else:

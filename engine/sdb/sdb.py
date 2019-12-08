@@ -11,9 +11,9 @@ from ..utils.logger import getLogger
 from ..utils.leader_election import Leader_Election
 
 class SharedDataBase(SimpleDataBase):
-    def __init__(self, ip, mask, dbport):
-        SimpleDataBase.__init__(self)
-        self.logger = getLogger()
+    def __init__(self, ip, mask, dbport, logger= getLogger()):
+        SimpleDataBase.__init__(self, logger)
+        self.sdblogger = logger
         self.ip = ip
         self.dbport = dbport
         self.backup = ""
@@ -25,24 +25,24 @@ class SharedDataBase(SimpleDataBase):
         if not self.im_backup or self.to_backup == addr[0]:
             request = Tcp_Sock_Reader(sock)
 
-            self.logger.debug(f'Recieved {request} from {addr}')
+            self.sdblogger.debug(f'Recieved {request} from {addr}')
 
             if 'get' in request:
                 if request['get'] == 'list':
                     full_list = Encode_Request([ a for a in self.dbs])
                     sock.send(full_list)
 
-                    self.logger.debug(f'Full Service List {full_list} Sent to {addr}')
+                    self.sdblogger.debug(f'Full Service List {full_list} Sent to {addr}')
 
                 else:
                     message = self._get(request['get'])
                     sock.send(Encode_Request(message))
 
-                    self.logger.debug(f'Sent {message} to {addr}')
+                    self.sdblogger.debug(f'Sent {message} to {addr}')
             elif 'post' in request:
                 if(self.backup != ''):
                     
-                    self.logger.debug(f'Backup Update Sent to {self.backup}')
+                    self.sdblogger.debug(f'Backup Update Sent to {self.backup}')
 
                     Tcp_Message(request, self.backup, self.dbport)
                 self._insert(request['post'],{ 'ip':request['ip'],'port':request['port'],'url':request['url']})

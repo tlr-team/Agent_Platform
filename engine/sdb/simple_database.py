@@ -1,14 +1,16 @@
 from ..utils.network import Tcp_Message
+from ..utils.logger import getLogger
 from threading import Thread, Lock
 from random import randint
 
 class SimpleDataBase:
-    def __init__(self):
+    def __init__(self, logger=getLogger()):
         '''
         Clase que mantiene un funcionamiento Basico de una Bd de agentes (Thread Safe)
         '''
         self.dbs = {}
         self.lock = Lock()
+        self.dblogger = logger
 
     def _insert(self, tag, agent):
         '''
