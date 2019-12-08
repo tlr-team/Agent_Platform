@@ -45,9 +45,9 @@ class Discovering:
 
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
     def _listen(self, msg ,ip):
-        if ip not in self.partners:
+        if ip[0] not in self.partners:
             with self.mutex:
-                self.partners[ip] = self.ttl
+                self.partners[ip[0]] = self.ttl
 
     # Hilo que va a enviar cada cierto tiempo definido un mensaje broadcast para decir que esta vivo
     def _write(self):
