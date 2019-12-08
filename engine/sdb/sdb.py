@@ -51,7 +51,7 @@ class SharedDataBase(SimpleDataBase):
                 self.id = request['ID']
 
             elif 'INFO' in request:
-                sock.send({"INFO_ACK":self.id})
+                sock.send(Encode_Request({"INFO_ACK":self.id}))
 
             elif 'SET_BACKUP' in request:
                 self.im_backup = False
