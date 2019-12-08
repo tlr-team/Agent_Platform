@@ -65,6 +65,72 @@ class KademliaProtocol(Service):
         )
         return True
 
+    def exposed_join_to_network(self, contact: str):
+        self.exposed_init(contact)
+        contact = Contact.from_json(contact)
+        while not self.started:
+            try:
+                if not self.initialized:
+                    raise Exception(f'KademliaProtocol initializing has fail.')
+                try:
+                    debug(f'Searching for {self.service_name} RPyC Service.')
+                    nodes = discover(self.service_name)
+                    debug(f'Finded: {nodes}.')
+                except DiscoveryError as e:
+                    raise DiscoveryError(f'Service:{self.service_name} not found - {e}.')
+                _any = 0
+                for ip,port in nodes:
+                    if ip == self.contact.ip and port == self.contact.port:
+                        continue
+                    count = 0
+                    while count < 5:
+                        try:
+                            conn = connect(ip, port)
+                            debug(f'')
+                            resp = conn.root.ping(self.contact.to_json())
+                            if resp:
+                                contact = Contact.from_json(resp)
+                                debug(f'Connection established with ({ip}:{port}).')
+                                break
+                            else:
+                                raise Exception(f'connection not initialized.')
+                        except Exception as e:
+                            error(f'Retrying to connect to ({ip}:{port}), Exception:\n{e}')
+                            count += 1
+                    if count == 5:
+                        debug(f'Connection not established with ({ip}:{port})')
+                        continue
+                    _any += 1
+                    assert self.contact != contact
+                    self.update_contacts(contact)
+                if not _any:
+                    raise Exception(f'No node discovered is connected.')
+                try:
+                    # At this point im connected at least with one node
+                    self.exposed_iter_find_node(self.contact.id)
+                except Exception as e:
+                    raise Exception(f'Interrupted first exposed_iter_find_node because {e}.')
+                buck_len = len(self.bucket_list)
+                for i in range(buck_len):
+                    if not self.bucket_list[i]:
+                        continue
+                    count = 0
+                    while count < 5:
+                        key = randint(2**i, 2**(i+1)-1)
+                        try:
+                            self.exposed_iter_find_node(key)
+                            break
+                        except Exception as e:
+                            error(f'Interrupted exposed_iter_find_node because: {e}')
+                    if count == 5:
+                        debug(f'exposed_iter_find_node not allowed in bucket {i}')
+                self.started = True
+            except Exception as e:
+                error(f'NODE NOT JOINNED {e}')
+                debug(f'sleep a while for keep retrying')
+                sleep(0.3)
+        return False
+             
     def exposed_ping(self, sender: Contact):
         if not self.initialized:
             error(f'Node not initialized.')
