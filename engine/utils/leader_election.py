@@ -47,6 +47,7 @@ class Discovering:
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
     def _listen(self, msg ,ip):
         if ip[0] not in self.partners:
+            self.disclogger.debug(f"NEW IP FOUND {ip[0]}")
             with self.mutex:
                 self.partners[ip[0]] = self.ttl
 
@@ -66,8 +67,10 @@ class Discovering:
                 for name, val in self.partners.items():
                     if val > 1:
                         temp[name] = val - 1
+                    else:
+                        self.disclogger.debug(f'TTL EXPIRED {name}')
                 self.partners = temp
-                self.disclogger.debug(f'partnerts :{temp}')
+                #self.disclogger.debug(f'partnerts :{temp}')
             sleep(2*self.time)
 
 class Leader_Election(Discovering):

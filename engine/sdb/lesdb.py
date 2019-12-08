@@ -115,7 +115,7 @@ def Worker_Process(ip, port, function, shared_memory_func, shared_memory, lock):
         if shared_memory_func(shared_memory, lock):
             logger.debug(f'Im not worker animore')
             exit()
-        logger.warning(f'valor de la memoria compartida, {shared_memory.value}')
+        #logger.warning(f'valor de la memoria compartida, {shared_memory.value}')
         sleep(1)
 
 def validate(shared, lock = None):
