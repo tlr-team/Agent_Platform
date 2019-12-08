@@ -5,7 +5,7 @@ Shared Db File
 from .simple_database import SimpleDataBase
 from socket import socket, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from threading import Thread, Lock
-from ..utils.network import Tcp_Sock_Reader, Encode_Request, Tcp_Message, ServerTcp
+from ..utils.network import Tcp_Sock_Reader, Encode_Request, Tcp_Message, ServerTcp, Void
 from time import sleep
 from ..utils.logger import getLogger
 from ..utils.leader_election import Leader_Election
@@ -36,6 +36,7 @@ class SharedDataBase(SimpleDataBase):
 
                 else:
                     message = self._get(request['get'])
+                    self.sdblogger.debug(f'Database {self.dbs} AFTER GET')
                     sock.send(Encode_Request(message))
 
                     self.sdblogger.debug(f'Sent {message} to {addr}')
@@ -44,8 +45,9 @@ class SharedDataBase(SimpleDataBase):
                     
                     self.sdblogger.debug(f'Backup Update Sent to {self.backup}')
 
-                    Tcp_Message(request, self.backup, self.dbport)
+                    Tcp_Message(request, self.backup, self.dbport, Void)
                 self._insert(request['post'],{ 'ip':request['ip'],'port':request['port'],'url':request['url']})
+                self.sdblogger.debug(f'Database {self.dbs} AFTER POST')
 
             elif 'ID' in request:
                 self.id = request['ID']

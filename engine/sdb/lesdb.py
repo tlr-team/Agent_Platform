@@ -5,7 +5,7 @@ Leader Election Shared Db File
 from .leader import DbLeader
 from .sdb import SharedDataBase
 from time import sleep
-from ..utils.network import Tcp_Message, Void, Tcp_Sock_Reader, ServerTcp
+from ..utils.network import Tcp_Message, Void, Tcp_Sock_Reader, ServerTcp, Encode_Request
 from ..utils.logger import getLogger
 from hashlib import sha1
 from threading import Thread
@@ -70,10 +70,12 @@ class LESDB(DbLeader, SharedDataBase):
             self.lelogger.debug(f'IP RESOLVED {ip}')
             if ip:
                 response = Tcp_Message(message, ip, self.dbport, Tcp_Sock_Reader if keyword == 'get' else Void)
-                if response:
-                    sock.send(response)
+                self.logger.debug(f'RECIEVED {response} from {ip}')
+                if response != None:
+                    sock.send(Encode_Request(response))
+                    self.logger.debug(f'Sended {response} TO {addr}')
             else:
-                print(f"IP NOT resolved, {ip}")
+                self.lelogger.debug(f"IP NOT resolved, {ip}")
         sock.close()
 
     def _resolve_db(self, msg):
