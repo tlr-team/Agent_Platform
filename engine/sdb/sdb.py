@@ -46,7 +46,7 @@ class SharedDataBase(SimpleDataBase):
                     self.sdblogger.debug(f'Backup Update Sent to {self.backup}')
 
                     Tcp_Message(request, self.backup, self.dbport, Void)
-                self._insert(request['post'],{ 'ip':request['ip'],'port':request['port'],'url':request['url']})
+                self._insert(request['post'],{ 'ip':request['ip'],'port':request['port'],'url':request['url'], 'protocol':request['protocol']})
                 self.sdblogger.debug(f'Database {self.dbs} AFTER POST')
 
             elif 'ID' in request:

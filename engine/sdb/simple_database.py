@@ -37,7 +37,7 @@ class SimpleDataBase:
             if n_data:
                 if n_data <= 3:
                     for i in range(0,n_data):
-                        self.dblogger.debug(f'i:{i}, self.dbs[i]:{self.dbs[i]} self.dbs[i][0]:{self.dbs[i][0]}')
+                        self.dblogger.debug(f'i:{i}, self.dbs[i]:{self.dbs[i]}')
                         response.append(self.dbs[i][0])
                 else:
                     a = randint(0,n_data-1)
