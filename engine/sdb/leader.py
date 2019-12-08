@@ -117,22 +117,23 @@ class DbLeader(Leader_Election):
 
     #region database
     def _leinsert(self, ip, id = None):
-        with self.dblock:
-            self.node_count += 1
-            if not id:
-                for key in self.database:
+        if ip != self.ip:
+            with self.dblock:
+                self.node_count += 1
+                if not id:
+                    for key in self.database:
+                        for i in range(0,2):
+                            if self.database[key][i] == None:
+                                self.database[key] = self._build_tuple(key, i, ip)
+                                return (key, i)
+                    self.database[self.main_count] = (ip,None)
+                    self.main_count += 1
+                    return (self.main_count -1 , 0)
+                else:
                     for i in range(0,2):
-                        if self.database[key][i] == None:
-                            self.database[key][i] = ip
+                        if self.database[id][i] == None:
+                            self.database[id] = self._build_tuple(id, i, ip)
                             return (key, i)
-                self.database[self.main_count] = (ip,None)
-                self.main_count += 1
-                return (self.main_count -1 , 0)
-            else:
-                for i in range(0,2):
-                    if self.database[id][i] == None:
-                        self.database[id][i] = ip
-                        return (key, i)
 
     def _ledelete(self, ip):
         with self.dblock:
@@ -140,7 +141,7 @@ class DbLeader(Leader_Election):
             for key in self.database:
                 for i in range(0,2):
                     if self.database[key][i] == ip:
-                        self.database[key][i] = None
+                        self.database[key] = self._build_tuple(key,i, None)
                         if self.database[key] == (None,None):
                             del self.database[key]
                             if key == self.main_count -1 :
@@ -153,4 +154,15 @@ class DbLeader(Leader_Election):
                 if self.database[key][1] != None:
                     return (key, self.database[key][1])
             return None
+
+    def _build_tuple(self, key, i, val):
+        other = self.database[key][(i-1)%2]
+        tup = (other, val) if i else (val,other)
+        return tup
+
+    def _exist(self, ip):
+        for _,tup in self.database.items():
+            if ip in tup:
+                return True
+        return False
     #endregion

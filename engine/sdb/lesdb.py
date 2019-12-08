@@ -27,12 +27,14 @@ class LESDB(DbLeader, SharedDataBase):
                 with self.freelock:
                     while(len(self.freelist)):
                         ip = self.freelist.pop()
-                        if ip != self.ip:
+                        if ip != self.ip and not self._exist(ip):
                             info = Tcp_Message({'INFO':''},ip,self.dbport)
                             if info:
                                 self.logger.debug(f'recieved info {info} from {ip}')
                                 id, backup = self._leinsert(ip)
-                                Tcp_Message({'ID':id}, ip, self.dbport)
+                                self.logger.debug(f'id and backup to {ip}: {id, backup}')
+                                Tcp_Message({'ID':id}, ip, self.dbport, Void)
+                                self.logger.debug(f" database {self.database}")
                                 if backup:
                                     with self.dblock:
                                         set_backup = self.database[id][0]
@@ -40,6 +42,7 @@ class LESDB(DbLeader, SharedDataBase):
                                     self.logger.debug(f'Sended SET_BACKUP to {set_backup}')
                                     Tcp_Message({'TO_BACKUP':set_backup},ip,self.dbport, Void)
                                     self.logger.debug(f'Sended TO_BACKUP to {ip}')
+                                self.logger.debug(f" database {self.database}")
             sleep(time)
 
     def _remove_dead(self, time):
@@ -68,6 +71,8 @@ class LESDB(DbLeader, SharedDataBase):
                 response = Tcp_Message(message, ip, self.dbport, Tcp_Sock_Reader if keyword == 'get' else Void)
                 if response:
                     sock.send(response)
+            else:
+                print("IP NOT resolved")
         sock.close()
 
     def _resolve_db(self, msg):
@@ -75,7 +80,7 @@ class LESDB(DbLeader, SharedDataBase):
 
     def _resolve_ip(self, msg, keyword):
         ID = self._resolve_db(msg[keyword])
-        return self.database[ID]
+        return self.database[ID] if ID else None
 
     def serve(self,time):
         Thread(target=self._serve,daemon=True,name='Discover Server Daemon').start()
