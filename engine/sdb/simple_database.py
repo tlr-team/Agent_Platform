@@ -23,8 +23,8 @@ class SimpleDataBase:
                 if not agent in self.dbs[tag][0]:
                     self.dbs[tag].append((agent,6))
                 else:
-                    for i in self.dbs[tag]:
-                        if agent in i:
+                    for i,val in enumerate(self.dbs[tag]):
+                        if agent in val:
                             self.dbs[tag][i] = (agent,6)
 
     def _get(self,tag):
