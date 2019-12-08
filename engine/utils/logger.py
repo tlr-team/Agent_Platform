@@ -11,10 +11,13 @@ from logging import (
     DEBUG,
     INFO,
     root,
+    FileHandler,
 )
 
+logger_count = 0
 
-def setup_logger(name='root', logfile='', level=DEBUG):
+
+def setup_logger(name='', logfile='', level=DEBUG):
     root.name = name or 'root'
 
     basicConfig(
@@ -26,7 +29,7 @@ def setup_logger(name='root', logfile='', level=DEBUG):
     )
 
 
-def getLogger(name='', level=DEBUG):
+def getLogger(name='log', level=DEBUG, to_file=False):
     # Gets or creates a logger
     logger = _getLogger(name)
 
@@ -36,8 +39,8 @@ def getLogger(name='', level=DEBUG):
 
         logger.propagate = False
 
-	    # define file handler and set formatter
-        handler = StreamHandler()
+        # define file handler and set formatter
+        handler = FileHandler(f'log/_{name}_.log') if to_file else StreamHandler()
         formatter = Formatter(
             fmt='%(asctime)-1s %(levelname)-9s- %(name)+10s: %(message)s',
             datefmt='%H:%M:%S',
