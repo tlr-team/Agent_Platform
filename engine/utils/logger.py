@@ -14,8 +14,6 @@ from logging import (
     FileHandler,
 )
 
-logger_count = 0
-
 
 def setup_logger(name='', logfile='', level=DEBUG):
     root.name = name or 'root'

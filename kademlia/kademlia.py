@@ -8,6 +8,7 @@ from rpyc.utils.factory import DiscoveryError
 from .utils import rpyc_connect, KSortedQueue, ThreadRunner
 from engine.utils.network import retry
 from queue import Queue, Empty
+from random import randint
 from socket import (
     socket,
     SOCK_DGRAM,
@@ -19,11 +20,14 @@ from socket import (
 
 DefaultKSize = 3  # FIXME: Put a correct value
 DefaultBSize = 160
-DefaultAlfaSize = 3
+DefaultAlfaSize = 1
 
 setup_logger(name='Kademlia')
 
 class KademliaProtocol(Service):
+    '''
+    Encapsulate the funcionality of a Kademlia's Node protocol.
+    '''
     def __init__(
         self,
         storage=StorageManager(),
@@ -33,7 +37,6 @@ class KademliaProtocol(Service):
     ):
         super(KademliaProtocol, self).__init__()
         self.k, self.b, self.a = k, b, a
-        self.storage_manager = storage  # TODO: use it
         self.lock = Lock()
         self.db = {}
         self.db_lock = Lock()
@@ -251,7 +254,7 @@ class KademliaProtocol(Service):
                 debug(
                     f'Success stored in {contact}'
                 )
-    # endregion
+    # endregion    
     def find_value_lookup(
         self,
         key: int,
@@ -308,7 +311,6 @@ class KademliaProtocol(Service):
                 kclosest.add(contact_finded)
                 queue.put(contact_finded)
             queue_lock.release()
-
 
 
     def store_lookup(self, key: int, queue: Queue, kclosest, visited: set, lock: Lock):
@@ -388,46 +390,44 @@ class KademliaProtocol(Service):
 
     # region Do functions
     @retry(1, 1, message='do_ping(retry) :: Fail to connect')
-    def do_ping(self, reciever: Contact):
-        if reciever == self.contact:
+    def do_ping(self, to_reciever: Contact):
+        if to_reciever == self.contact:
             return None
         debug(f'Node not initialized.')
-        con = self.connect_to(reciever)
+        con = self.connect_to(to_reciever)
         result = con.root.ping(self.contact.to_json())
         return result
 
     @retry(1, 1, message='do_store(retry) :: Fail to connect')
-    def do_store_value(self, reciever: Contact, key, value, store_time):
-        if reciever == self.contact:
+    def do_store_value(self, to_reciever: Contact, key, value, store_time):
+        if to_reciever == self.contact:
             return None
-        debug(f'Storing ({key},{value}) in {reciever}.')
-        con = self.connect_to(reciever)
+
         result = con.root.store(
             self.contact.to_json(), int(key), str(value), store_time
         )
         return result
 
     @retry(1, 1, message='do_find_node(retry) :: Fail to connect')
-    def do_find_node(self, reciever: Contact, key):
-        if reciever == self.contact:
+    def do_find_node(self, to_reciever: Contact, key):
+        if to_reciever == self.contact:
             return None
-        debug(
-            f'Searching a node with key:{key} in {reciever}.'
+
         )
-        con = self.connect_to(reciever)
+        con = self.connect_to(to_reciever)
         result = con.root.find_node(self.contact.to_json(), int(key))
         return result
 
     @retry(1, 1, message='do_find_value(retry) :: Fail to connect')
-    def do_find_value(self, reciever: Contact, key):
-        if reciever == self.contact:
+    def do_find_value(self, to_reciever: Contact, key):
+        if to_reciever == self.contact:
             return None
-        debug(
-            f'Searching a value with key:{key} in {reciever}.'
+
         )
-        con = self.connect_to(reciever)
+        con = self.connect_to(to_reciever)
         result = con.root.find_value(self.contact.to_json(), int(key))
         return result
+    # endregion
 
     def update_contacts(self, contact: Contact):
         debug(f'Updating contact {contact}).')
@@ -450,5 +450,4 @@ class KademliaProtocol(Service):
         debug(f'Done.')
         return
 
-    # endregion
 
