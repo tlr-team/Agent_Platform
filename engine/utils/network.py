@@ -12,6 +12,14 @@ from threading import Thread, Semaphore
 from inspect import signature
 from io import BytesIO
 from functools import wraps
+from hashlib import sha1
+
+
+def get_hash(addr=None, ip='', port=''):
+    addr = addr or (ip, port)
+    assert addr[0] and addr[1]
+    return int(sha1((':'.join((addr[0], str(addr[1])))).encode()).hexdigest(), base=16)
+
 
 # decorador que reintenta una función si esta da error cada seconds cantidad de tiempo
 def retry(time_to_sleep, times=1, message='No es posible conectar, reintentando'):

@@ -35,7 +35,6 @@ class KademliaProtocol(Service):
         self.k, self.b, self.a = k, b, a
         self.storage_manager = storage  # TODO: use it
         self.lock = Lock()
-        self.service_port = 9000
         self.db = {}
         self.db_lock = Lock()
         self.initialized = False
