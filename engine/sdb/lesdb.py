@@ -71,7 +71,7 @@ class LESDB(DbLeader, SharedDataBase):
         sock.close()
 
     def _resolve_db(self, msg):
-        return sha1(str(msg).encode()).digest()[-1] % self.main_count
+        return 0 if not self.main_count else sha1(str(msg).encode()).digest()[-1] % self.main_count
 
     def _resolve_ip(self, msg, keyword):
         ID = self._resolve_db(msg[keyword])
