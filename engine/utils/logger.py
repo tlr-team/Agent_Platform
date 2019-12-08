@@ -30,16 +30,19 @@ def getLogger(name='', level=DEBUG):
     # Gets or creates a logger
     logger = _getLogger(name)
 
-    # set log level
-    logger.setLevel(level)
+    if not logger.handlers:
+        # set log level
+        logger.setLevel(level)
 
-    # define file handler and set formatter
-    handler = StreamHandler()
-    formatter = Formatter(
-        fmt='%(asctime)-1s %(levelname)-9s- %(name)+10s: %(message)s',
-        datefmt='%H:%M:%S',
-    )
-    handler.setFormatter(formatter)
+        logger.propagate = False
 
-    logger.addHandler(handler)
+	    # define file handler and set formatter
+        handler = StreamHandler()
+        formatter = Formatter(
+            fmt='%(asctime)-1s %(levelname)-9s- %(name)+10s: %(message)s',
+            datefmt='%H:%M:%S',
+        )
+        handler.setFormatter(formatter)
+
+        logger.addHandler(handler)
     return logger

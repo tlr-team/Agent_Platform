@@ -31,10 +31,10 @@ class Router:
         # mutex
         self.channel = []
         self.mutex = Semaphore()
-        self.Broadcast_Address = "10.10.10.255"
+        self.Broadcast_Address = "192.168.2.31"
         self.Broadcast_Port = 10002
         self.am_ip = "127.0.0.1"
-        self.sm_ip = "10.10.10.5"
+        self.sm_ip = "192.168.2.7"
         self.bd_port = 9342
 
     def serve(self):
@@ -50,9 +50,10 @@ class Router:
             result = Send_Broadcast_Message('get',self.Broadcast_Address,self.Broadcast_Port,Udp_Response)
 
             if result and not len(self.channel):
-                self.mutex.acquire()
-                self.channel.append(Decode_Response(result))
-                self.mutex.release()
+                with self.mutex:
+                    message = result
+                    print(message)
+                    self.channel.append(message)
 
             else:
                 sleep(5)
@@ -88,7 +89,7 @@ class Router:
                 else:
                     #Mandar el update a la bd1
                     #Mandar el update a la bd2
-                    Tcp_Message(req,self.am_ip,self.bd_port)
+                    #Tcp_Message(req,self.am_ip,self.bd_port)
                     Tcp_Message(req,self.sm_ip,self.bd_port)
             
 

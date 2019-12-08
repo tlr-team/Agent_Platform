@@ -11,9 +11,7 @@ from json import dumps, loads
 from threading import Thread, Semaphore
 from inspect import signature
 from io import BytesIO
-from .logger import getLogger
 
-logger = getLogger(name='utils')
 # decorador que reintenta una función si esta da error cada seconds cantidad de tiempo
 def retry(time_to_sleep, times=1, message='No es posible conectar, reintentando'):
     def FReciever(function):
@@ -24,7 +22,7 @@ def retry(time_to_sleep, times=1, message='No es posible conectar, reintentando'
                     result = function(*args, **kwargs)
                     return True, result
                 except:
-                    logger.error(message)
+                    #logger.error(message)
                     if times <= count + 1 and time_to_sleep:
                         sleep(time_to_sleep)
                 count += 1
@@ -80,7 +78,11 @@ def Ip_To_Binary(ip):
 def Get_Subnet_Host_Number(ip, mask):
     ip_bin = Ip_To_Binary(ip)
     host = ip_bin[mask:]
-    return int(host)
+    result = 0
+    for i in range(0,len(host)):
+        if int(host[i]):
+            result += 2 ** (len(host)-i-1) 
+    return result
 
 
 # Convierte un ip de binario a notecion decimal ipv4
@@ -109,23 +111,34 @@ def Get_Broadcast_Ip(ip, mask):
 
 
 # Recive un socket TCP y devuelve el resultado de leer todo el contenido del mismo
-def Tcp_Sock_Reader(socket):
+def Tcp_Sock_Reader(sock):
     result = None
     with BytesIO() as buf:
-        msg = socket.recv(1)
-        while msg != b'':
+        msg = sock.recv(1)
+        llaves = 1 if msg in b'{[' else 0
+        if llaves:
             buf.write(msg)
-            msg = socket.recv(1)
-        result = Decode_Response(buf.getvalue())
+            comillas = False
+            while llaves:
+                msg = sock.recv(1)
+                buf.write(msg)
+                if msg == b'"':
+                    comillas = not comillas
+                if msg in b'{['  and not comillas:
+                    llaves += 1
+                if msg in b'}]' and not comillas:
+                    llaves -= 1
+            result = Decode_Response(buf.getvalue())
     return result
 
-
-# Envia un mensaje tcp y devuelve la respuesta
-def Tcp_Message(msg, ip, port):
-    with socket(type=SOCK_STREAM) as sock:
-        sock.connect((ip, port))
-        sock.send(Encode_Request(msg))
-        return Tcp_Sock_Reader(sock)
+#Envia un mensaje tcp y devuelve la respuesta
+def Tcp_Message(msg,ip,port, function = Tcp_Sock_Reader):
+    with socket(type= SOCK_STREAM) as sock:
+        sock.connect((ip,port))
+        tmp = Encode_Request(msg)
+        sock.send(tmp)
+        response = function(sock)
+    return response
 
 
 # Envia un mensaje udp
@@ -138,46 +151,31 @@ def Udp_Message(msg, ip, port, function=Void):
 def Udp_Response(socket):
     return Decode_Response(socket.recvfrom(2048)[0])
 
+def ServerTcp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto = None, lock = None):
+    with socket(type=SOCK_STREAM) as sock:
+        sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
+        sock.bind((ip,port))
+        sock.listen(10)
+        while(True):
+            if objeto and Stop_Condition(objeto) if not lock else Stop_Condition(objeto,lock):
+                break
+            print("Condicion TCP: ", Stop_Condition(objeto) if objeto != None else None)
+            client, addr = sock.accept()
+            logger.debug(f'Recieved TCP Connection from {addr}')
+            Thread(target=client_fucntion,args=(client,addr),daemon=True).start()
+
+def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto = None):
+    with socket(type=SOCK_DGRAM) as sock:
+        sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
+        sock.bind((ip,port))
+        while(True):
+            if(objeto and Stop_Condition(objeto)):
+                break
+            msg, addr = sock.recvfrom(1024)
+            logger.debug(f'Recieved UDP Connection from {addr}')
+            Thread(target=client_fucntion,args=(msg,addr),daemon=True).start()
+
 
 # FIXME aplicar hilos para concurrencia y un lock
 
 # Clase para el algoritmo de descubrimiento
-class Discovering:
-    def __init__(self, port, broadcast_addr, time=10, ttl=3):
-        self.partners = {}
-        self.port = port
-        self.b_addr = broadcast_addr
-        self.mutex = Semaphore()
-        self.time = time
-        self.ttl = ttl
-        self.socket = socket(type=SOCK_DGRAM)
-        self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
-        self.socket.bind(('', port))
-
-    def _start(self):
-        Thread(target=self._write, daemon=True).start()
-        while True:
-            _, addr = self.socket.recvfrom(2048)
-            Thread(target=self._listen, args=(addr[0],), daemon=True).start()
-
-    # Hilo que va a recibir el mensaje de broadcast y procesarlo
-    def _listen(self, ip):
-        if ip not in self.partners:
-            self.mutex.acquire()
-            self.partners[ip] = self.ttl
-            self.mutex.release()
-
-    # Hilo que va a enviar cada cierto tiempo definido un mensaje broadcast para decir que esta vivo
-    def _write(self):
-        while True:
-            Send_Broadcast_Message("Hello", self.b_addr, self.port)
-            self.mutex.acquire()
-            temp = {}
-            for name, val in self.partners.items():
-                if val > 1:
-                    temp[name] = val - 1
-            self.partners = temp
-            print(self.partners)
-            self.mutex.release()
-            sleep(self.time)
-
