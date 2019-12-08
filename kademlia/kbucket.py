@@ -66,6 +66,9 @@ class KBucket:
     def __iter__(self):
         return iter(self.contacts_dict.values())
 
+    def __bool__(self):
+        return len(self) != 0
+
     def __str__(self):
         return f'<[{self.low} : {self.high}],len={len(self)}>'
 

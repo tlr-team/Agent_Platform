@@ -118,3 +118,10 @@ class BucketList:
                 )
             ri += 1
         return res
+
+    def __getitem__(self, i: int):
+        assert i < self.k and i >= 0
+        res = None
+        with self.buckets_lock:
+            res = self.buckets[i]
+        return res
