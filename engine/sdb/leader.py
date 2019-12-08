@@ -84,6 +84,7 @@ class DbLeader(Leader_Election):
                 break
             lista = self.Get_Partners()
             self._check_newones(lista)
+            self.lelogger.debug(f' deadones checker initated')
             self._check_deadones(lista)            
             sleep(time)
 
@@ -106,12 +107,12 @@ class DbLeader(Leader_Election):
                 self.node_count += 1
 
     def _check_deadones(self, lista):
-        for i in range(0,len(self.database.keys()) - 1):
+        for _,val in self.database.items():
             for j in range(0,2):
-                if self.database[i][j] and self.database[i][j] not in lista:
+                if val[j] and val[j] not in lista:
                     with self.deadlock:
-                        self.dbleaderlogger.debug(f'ip lost {self.database[i][j]}')
-                        self.deadlist.append(self.database[i][j])
+                        self.dbleaderlogger.debug(f'IP LOST {val[j]}')
+                        self.deadlist.append(val[j])
 
 
 
