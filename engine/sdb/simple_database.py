@@ -20,7 +20,7 @@ class SimpleDataBase:
             if not tag in self.dbs:
                 self.dbs[tag] = [(agent,6)]
             else:
-                if not agent in self.dbs[tag]:
+                if not agent in self.dbs[tag][0]:
                     self.dbs[tag].append((agent,6))
                 else:
                     for i in self.dbs[tag]:
