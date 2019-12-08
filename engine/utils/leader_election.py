@@ -1,8 +1,8 @@
 from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, SOCK_STREAM, SO_BROADCAST
 from time import sleep
 from json import dumps, loads
-from .network import Get_Subnet_Host_Number,Send_Broadcast_Message,Decode_Response,Encode_Request,Get_Broadcast_Ip,Discovering,Get_Subnet_Host_Number
-from threading import Thread, Event
+from .network import Get_Subnet_Host_Number,Send_Broadcast_Message,Decode_Response,Encode_Request,Get_Broadcast_Ip,Get_Subnet_Host_Number,ServerUdp
+from threading import Thread, Event, Semaphore
 from .logger import getLogger
 
 class StoppableThread(Thread):
@@ -23,12 +23,54 @@ class StoppableThread(Thread):
 def Void(time):
     pass
 
+class Discovering:
+    def __init__(self, port, broadcast_addr, logger, time=10, ttl = 3):
+        self.partners = {}
+        self.port = port
+        self.b_addr = broadcast_addr
+        self.mutex = Semaphore()
+        self.time = time
+        self.ttl = ttl
+        self.logger = logger
 
-class Leader_Election:
+    def Get_Partners(self):
+        with self.mutex:
+            return [a for a in self.partners.keys()]
+    
+    def _serve(self):
+        Thread(target=self._write, daemon=True).start()
+        Thread(target=self._refresh, daemon=True).start()
+        self.logger.info(f'Discover Server Initiated at f{self.port}')
+        ServerUdp('',self.port,self._listen, self.logger)
+
+    # Hilo que va a recibir el mensaje de broadcast y procesarlo
+    def _listen(self, msg ,ip):
+        if ip not in self.partners:
+            with self.mutex:
+                self.partners[ip] = self.ttl
+
+    # Hilo que va a enviar cada cierto tiempo definido un mensaje broadcast para decir que esta vivo
+    def _write(self):
+        self.logger.info(f'Discover write Daemon initiated')
+        while True:
+            Send_Broadcast_Message("Hello", self.b_addr, self.port)
+            sleep(self.time)
+
+    #Hilo que va a refrescar el estado de la tabla
+    def _refresh(self):
+        self.logger.info(f'Discover refresh Daemon initiated')
+        while(True):
+            with self.mutex:
+                temp = {}
+                for name, val in self.partners.items():
+                    if val > 1:
+                        temp[name] = val - 1
+                self.partners = temp
+            sleep(self.time)
+
+class Leader_Election(Discovering):
     def __init__(self, ip, mask, port):
-        self.logger = getLogger()
-        self.brd = Get_Broadcast_Ip(ip,mask)
-        self.discover = Discovering(port,self.brd,self.logger,3,8)
+        Discovering.__init__(self, port, Get_Broadcast_Ip(ip,mask), getLogger(),3,8)
         self.mask = mask
         self.ip = ip
         self.im_leader = False
@@ -36,14 +78,14 @@ class Leader_Election:
         self.leader = None
         
     def _start(self):
-        Thread(target=self._check_leader,daemon = True).start()
-        self.discover._start()
+        Thread(target=self._check_leader,daemon = True, name='Leader Election Daemon').start()
+        Thread(target=self._serve,daemon=True,name='DiscoverServer').start()
 
     def _check_leader(self, time = 10):
-        self.logger.info(f'Leader Election: Check Leader Deamon Initiated')
+        self.logger.info(f'Leader Election: Check Leader Daemon Initiated')
         while(True):
-            ips = self.discover.Get_Partners()
-            if len(self.discover.partners): 
+            ips = self.Get_Partners()
+            if len(self.partners): 
                 ips.sort(key=lambda x : Get_Subnet_Host_Number(x,self.mask))
                 if self.leader != ips[-1]:
                     self.leader = ips[-1]
