@@ -91,7 +91,7 @@ class DbLeader(Leader_Election):
     def _check_newones(self, lista):
         for i in lista:
             present = False
-            for j in range(0,len(self.database.keys() - 1)):
+            for j in range(0,len(self.database.keys()) - 1):
                 if present:
                     break
                 for k in range(0,2):
@@ -106,7 +106,7 @@ class DbLeader(Leader_Election):
                 self.node_count += 1
 
     def _check_deadones(self, lista):
-        for i in range(0,len(self.database.keys() - 1)):
+        for i in range(0,len(self.database.keys()) - 1):
             for j in range(0,2):
                 if self.database[i][j] and self.database[i][j] not in lista:
                     with self.deadlock:
