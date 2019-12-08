@@ -4,7 +4,7 @@ from ..utils.logger import getLogger
 from ..utils.network import Decode_Response, Encode_Request
 
 
-class AgentManager:
+class AgentManagerM:
     def __init__(self, port, forgery_time=30000):
         self.agents = {}
         self.forgery_time = timedelta(microseconds=forgery_time)

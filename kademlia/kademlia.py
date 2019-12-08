@@ -2,7 +2,7 @@ from .contact import Contact
 from .bucketlist import BucketList
 from .storage import StorageManager  # TODO: implement the SorageManager
 from threading import Thread, Lock
-from engine.utils.logger import getLogger
+from engine.utils.logger import setup_logger, debug, error, info
 from rpyc import Service,discover
 from rpyc.utils.factory import DiscoveryError 
 from .utils import rpyc_connect, KSortedQueue, ThreadRunner
@@ -21,6 +21,7 @@ DefaultKSize = 3  # FIXME: Put a correct value
 DefaultBSize = 160
 DefaultAlfaSize = 3
 
+setup_logger(name='Kademlia')
 
 class KademliaProtocol(Service):
     def __init__(
@@ -37,7 +38,6 @@ class KademliaProtocol(Service):
         self.service_port = 9000
         self.db = {}
         self.db_lock = Lock()
-        self.logger = getLogger(name='KademliaProtocol')
         self.initialized = False
         self.started = False
         self.bucket_list: BucketList
@@ -51,31 +51,31 @@ class KademliaProtocol(Service):
             contact if isinstance(contact, Contact) else Contact.from_json(contact)
         )
         self.bucket_list = BucketList(self.contact.id, k=self.k, b=self.b)
-        self.logger.debug(f'exposed_init :: Node Initialized (id:{self.contact.id}).')
+        debug(f'Node Initialized (id:{self.contact.id}).')
         self.initialized = True
-        self.logger.debug(
-            f'exposed_init :: Node Initialized(id:{self.contact.id},k:{self.k},b:{self.b}'
+        debug(
+            f'Node Initialized(id:{self.contact.id},k:{self.k},b:{self.b}'
         )
         return True
 
     def exposed_ping(self, sender: Contact):
         if not self.initialized:
-            self.logger.error(f'exposed_ping :: Node not initialized.')
+            error(f'Node not initialized.')
             return False
         sender = Contact.from_json(sender)
-        self.logger.info(f'exposed_ping :: <Ping> from {sender}.')
+        info(f'<Ping> from {sender}.')
         self.update_contacts(sender)
-        self.logger.debug(f'exposed_ping :: contact:{sender} stored.')
+        debug(f'contact:{sender} stored.')
         return self.contact.to_json()
 
     def exposed_store(self, sender: Contact, key: int, value: str, store_time):
-        self.logger.debug(
-            f'exposed_store :: Storing ({key},{value}) at time {store_time}.'
+        debug(
+            f'Storing ({key},{value}) at time {store_time}.'
         )
         if not self.initialized:
-            self.logger.error(f'exposed_store :: Node not initialized.')
+            error(f'Node not initialized.')
             return False
-        self.logger.debug(f'exposed_store :: Requested by {sender}.')
+        debug(f'Requested by {sender}.')
         sender = Contact.from_json(sender)
         self.update_contacts(sender)
         try:
@@ -87,55 +87,55 @@ class KademliaProtocol(Service):
             (value, store_time) if time < store_time else (stored_value, time)
         )
         self.db_lock.release()
-        # self.logger.debug(f'exposed_store :: Finish with {sender}.')
+        # debug(f'Finish with {sender}.')
         return True
 
     def exposed_find_value(self, sender: Contact, key: int):
         if not self.initialized:
-            self.logger.error(f'exposed_find_value :: Node not initialized.')
+            error(f'Node not initialized.')
             return None
         sender = Contact.from_json(sender)
         self.update_contacts(sender)
-        self.logger.debug(f'exposed_find_value :: Requested by {sender}.')
+        debug(f'Requested by {sender}.')
         try:
             self.db_lock.acquire()
             value, store_time = self.db[key]
-            self.logger.debug(f'exposed_find_value :: Found key:{key}, value:{value}.')
+            debug(f'Found key:{key}, value:{value}.')
             self.db_lock.release()
             return value, store_time
         except KeyError:
             self.db_lock.release()
-            self.logger.debug(f'exposed_find_value :: Key({key}) not found.')
+            debug(f'Key({key}) not found.')
             return None
 
     def exposed_find_node(self, sender: Contact, key: int):
         if not self.initialized:
-            self.logger.error(f'exposed_find_node :: Node not initialized.')
+            error(f'Node not initialized.')
             return None
         sender = Contact.from_json(sender)
         self.update_contacts(sender)
-        self.logger.debug(f'exposed_find_node :: Requested by {sender}.')
+        debug(f'Requested by {sender}.')
         result = []
         with self.bucket_list.buckets_lock:
             for c in self.bucket_list.get_closest(key):
                 result.append(c.to_json())
                 if len(result) >= self.k:
                     break
-        self.logger.debug(
-            f'exposed_find_node :: Sended {len(result)} contacts to {sender}.'
+        debug(
+            f'Sended {len(result)} contacts to {sender}.'
         )
         return result
 
     def exposed_iter_find_node(self, key: int):
         if not self.initialized:
-            self.logger.error(f'exposed_iter_find_node :: Node not initialized.')
+            error(f'Node not initialized.')
             return False
         if key == self.contact.id:
-            self.logger.debug(
-                f'exposed_iter_find_node :: The node.id({self.contact.id}) == key({key}).'
+            debug(
+                f'The node.id({self.contact.id}) == key({key}).'
             )
             return self.contact.to_json()
-        self.logger.debug(f'exposed_iter_find_node :: Strating iterative find node.')
+        debug(f'Strating iterative find node.')
         queue = Queue()
         visited = set()
         kclosest = KSortedQueue(self.k, self.contact.id)
@@ -148,8 +148,8 @@ class KademliaProtocol(Service):
             visited.add(contact)
             kclosest.add(contact)
             if queue.qsize() >= self.a:
-                self.logger.debug(
-                    f'exposed_iter_find_node :: Alpha:{queue.qsize()} contacts to look for.'
+                debug(
+                    f'Alpha:{queue.qsize()} contacts to look for.'
                 )
                 break
         container = ThreadRunner(
@@ -166,10 +166,10 @@ class KademliaProtocol(Service):
 
     def exposed_iter_store(self, key, value, store_time):
         if not self.initialized:
-            self.logger.error(f'exposed_iter_store :: Node not initialized.')
+            error(f'Node not initialized.')
             return False
 
-        self.logger.debug(f'exposed_iter_store :: Strating iterative store.')
+        debug(f'Strating iterative store.')
         queue = Queue()
         visited = set()
         kclosest = KSortedQueue(self.k, self.contact.id)
@@ -182,8 +182,8 @@ class KademliaProtocol(Service):
             visited.add(contact)
             kclosest.add(contact)
             if queue.qsize() >= self.a:
-                self.logger.debug(
-                    f'exposed_iter_store :: Alpha:{queue.qsize()} contacts to look for.'
+                debug(
+                    f'Alpha:{queue.qsize()} contacts to look for.'
                 )
                 break
         container = ThreadRunner(
@@ -196,21 +196,21 @@ class KademliaProtocol(Service):
         success = 0
 
         for cont in kclosest:
-            self.logger.debug(
-                f'exposed_iter_store :: do_store_value to {cont} of {key}:({value},{store_time}).'
+            debug(
+                f'do_store_value to {cont} of {key}:({value},{store_time}).'
             )
             if not self.do_store_value(cont, key, value, store_time)[0]:
-                self.logger.error(f'exposed_iter_store :: Unable to connect to {cont}.')
+                error(f'Unable to connect to {cont}.')
             else:
                 success += 1
         return success != 0
 
     def exposed_iter_find_value(self, key):
         if not self.initialized:
-            self.logger.error(f'exposed_iter_find_value :: Node not initialized.')
+            error(f'Node not initialized.')
             return None
 
-        self.logger.debug(f'exposed_iter_find_value :: Strating iterative find value.')
+        debug(f'Strating iterative find value.')
         queue = Queue()
         visited = set()
         kclosest = KSortedQueue(self.k, self.contact.id)
@@ -224,8 +224,8 @@ class KademliaProtocol(Service):
             visited.add(contact)
             kclosest.add(contact)
             if queue.qsize() >= self.a:
-                self.logger.debug(
-                    f'exposed_iter_find_value :: Alpha:{queue.qsize()} contacts to look for.'
+                debug(
+                    f'Alpha:{queue.qsize()} contacts to look for.'
                 )
                 break
 
@@ -241,12 +241,12 @@ class KademliaProtocol(Service):
         if value is None:
             return None
         for cont in kclosest:
-            self.logger.debug(
-                f'exposed_iter_find_value :: Storing {key},({most_recent_value}) in Contact:{cont}.'
+            debug(
+                f'Storing {key},({most_recent_value}) in Contact:{cont}.'
             )
             if not self.do_store_value(cont, key, value, time)[0]:
-                self.logger.debug(
-                    f'exposed_iter_find_value :: Success stored in {contact}'
+                debug(
+                    f'Success stored in {contact}'
                 )
     # endregion
     def find_value_lookup(
@@ -261,22 +261,22 @@ class KademliaProtocol(Service):
     ):
         contact = None
         try:
-            self.logger.debug('find_value_lookup :: Getting a contact from the queue.')
+            debug('Getting a contact from the queue.')
             contact = queue.get(timeout=1)
         except Empty:
-            self.logger.debug('find_value_lookup :: Empty queue.')
+            debug('Empty queue.')
             return
-        self.logger.debug(f'find_value_lookup :: do_find_node to contact:{contact}.')
+        debug(f'do_find_node to contact:{contact}.')
         success, contacts = self.do_find_node(contact, key)
         if not success:
-            self.logger.debug(f'find_value_lookup :: Unable to connect to {contact}.')
+            debug(f'Unable to connect to {contact}.')
             return
-        self.logger.debug(
-            f'find_value_lookup :: do_find_value key({key}) to {contact}.'
+        debug(
+            f'do_find_value key({key}) to {contact}.'
         )
         success, value_time = self.do_find_value(contact, key)
         if not success:
-            self.logger.debug(f'find_value_lookup :: Unable to connect to {contact}.')
+            debug(f'Unable to connect to {contact}.')
             return
         self.update_contacts(contact)
 
@@ -287,19 +287,19 @@ class KademliaProtocol(Service):
                     value,
                     time if time > most_recent_value[1] else most_recent_value,
                 )
-                self.logger.debug(
-                    f'find_value_lookup :: Update value key({key}) to {most_recent_value}.'
+                debug(
+                    f'Update value key({key}) to {most_recent_value}.'
                 )
-        self.logger.debug(f'find_value_lookup :: Search key({key}) in contacts.')
+        debug(f'Search key({key}) in contacts.')
         for contact_finded in contacts:
             if not self.do_ping(contact_finded)[0]:
-                self.logger.debug(f'find_value_lookup :: Unable to connect to {contact_finded}.')
+                debug(f'Unable to connect to {contact_finded}.')
                 continue
             self.update_contacts(contact_finded)
             queue_lock.acquire()
             if not contact_finded in visited:
-                self.logger.debug(
-                    f'find_value_lookup :: Adding {contact_finded} to pendings.'
+                debug(
+                    f'Adding {contact_finded} to pendings.'
                 )
                 visited.add(contact_finded)
                 kclosest.add(contact_finded)
@@ -311,15 +311,15 @@ class KademliaProtocol(Service):
     def store_lookup(self, key: int, queue: Queue, kclosest, visited: set, lock: Lock):
         contact = None
         try:
-            self.logger.debug('store_lookup :: Getting a contact from the queue.')
+            debug('Getting a contact from the queue.')
             contact = queue.get(timeout=1)
         except Empty:
-            self.logger.debug('store_lookup :: Empty queue.')
+            debug('Empty queue.')
             return
-        self.logger.debug(f'store_lookup :: do_find_node to contact:{contact}.')
+        debug(f'do_find_node to contact:{contact}.')
         success, contacts = self.do_find_node(contact, key)
         if not success:
-            self.logger.debug(f'store_lookup :: Unable to connect to {contact}.')
+            debug(f'Unable to connect to {contact}.')
             return
         self.update_contacts(contact)
         contacts = map(Contact.from_json, contacts)
@@ -327,15 +327,15 @@ class KademliaProtocol(Service):
             if contact_finded == self.contact:
                 continue
             if not self.do_ping(contact_finded)[0]:
-                self.logger.debug(
-                    f'store_lookup :: Unable to connect to {contact_finded}.'
+                debug(
+                    f'Unable to connect to {contact_finded}.'
                 )
                 continue
             self.update_contacts(contact_finded)
             lock.acquire()
             if not contact_finded in visited:
-                self.logger.debug(
-                    f'store_lookup :: Adding {contact_finded} to pendings.'
+                debug(
+                    f'Adding {contact_finded} to pendings.'
                 )
                 visited.add(contact_finded)
                 queue.put(contact_finded)
@@ -345,15 +345,15 @@ class KademliaProtocol(Service):
     def find_node_lookup(self, key, queue: Queue, kclosest, visited: set, lock: Lock):
         contact = None
         try:
-            self.logger.debug('find_node_lookup :: Getting a contact from the queue.')
+            debug('Getting a contact from the queue.')
             contact = queue.get(timeout=1)
         except Empty:
-            self.logger.debug('find_node_lookup :: Empty queue.')
+            debug('Empty queue.')
             return
-        self.logger.debug(f'find_node_lookup :: do_find_node to contact:{contact}.')
+        debug(f'do_find_node to contact:{contact}.')
         success, contacts = self.do_find_node(contact, key)
         if not success:
-            self.logger.debug(f'find_node_lookup :: Unable to connect to {contact}.')
+            debug(f'Unable to connect to {contact}.')
             return
         self.update_contacts(contact)
         contacts = map(Contact.from_json, contacts)
@@ -361,15 +361,15 @@ class KademliaProtocol(Service):
             if contact_finded == self.contact:
                 continue
             if not self.do_ping(contact_finded)[0]:
-                self.logger.debug(
-                    f'find_node_lookup :: Unable to connect to {contact_finded}.'
+                debug(
+                    f'Unable to connect to {contact_finded}.'
                 )
                 continue
             self.update_contacts(contact_finded)
             lock.acquire()
             if not contact_finded in visited:
-                self.logger.debug(
-                    f'find_node_lookup :: Adding {contact_finded} to pendings.'
+                debug(
+                    f'Adding {contact_finded} to pendings.'
                 )
                 visited.add(contact_finded)
                 queue.put(contact_finded)
@@ -377,10 +377,10 @@ class KademliaProtocol(Service):
             lock.release()
 
     def connect_to(self, contact):
-        self.logger.debug(f'connect_to :: trying to connect to {contact}.')
+        debug(f'trying to connect to {contact}.')
         connection = rpyc_connect(contact.ip, contact.port, timeout=1)
         connection.ping()
-        self.logger.debug(f'connect_to :: Added Contact:{contact}')
+        debug(f'Added Contact:{contact}')
         return connection
 
     # region Do functions
@@ -388,7 +388,7 @@ class KademliaProtocol(Service):
     def do_ping(self, reciever: Contact):
         if reciever == self.contact:
             return None
-        self.logger.debug(f'do_ping :: Node not initialized.')
+        debug(f'Node not initialized.')
         con = self.connect_to(reciever)
         result = con.root.ping(self.contact.to_json())
         return result
@@ -397,7 +397,7 @@ class KademliaProtocol(Service):
     def do_store_value(self, reciever: Contact, key, value, store_time):
         if reciever == self.contact:
             return None
-        self.logger.debug(f'do_store :: Storing ({key},{value}) in {reciever}.')
+        debug(f'Storing ({key},{value}) in {reciever}.')
         con = self.connect_to(reciever)
         result = con.root.store(
             self.contact.to_json(), int(key), str(value), store_time
@@ -408,8 +408,8 @@ class KademliaProtocol(Service):
     def do_find_node(self, reciever: Contact, key):
         if reciever == self.contact:
             return None
-        self.logger.debug(
-            f'do_find_node :: Searching a node with key:{key} in {reciever}.'
+        debug(
+            f'Searching a node with key:{key} in {reciever}.'
         )
         con = self.connect_to(reciever)
         result = con.root.find_node(self.contact.to_json(), int(key))
@@ -419,15 +419,15 @@ class KademliaProtocol(Service):
     def do_find_value(self, reciever: Contact, key):
         if reciever == self.contact:
             return None
-        self.logger.debug(
-            f'do_find_value :: Searching a value with key:{key} in {reciever}.'
+        debug(
+            f'Searching a value with key:{key} in {reciever}.'
         )
         con = self.connect_to(reciever)
         result = con.root.find_value(self.contact.to_json(), int(key))
         return result
 
     def update_contacts(self, contact: Contact):
-        self.logger.debug(f'update_contacts :: Updating contact {contact}).')
+        debug(f'Updating contact {contact}).')
         if contact == self.contact:
             return
         if not self.bucket_list.add_contact(contact):
@@ -440,11 +440,11 @@ class KademliaProtocol(Service):
                     to_rem = cont
                     break
             if to_rem:
-                self.logger.debug(f'update_contacts :: To remove contact:{to_rem}.')
+                debug(f'To remove contact:{to_rem}.')
                 bucket.remove_contact(to_rem)
                 bucket.add_contact(contact)
             bucket.lock.release()
-        self.logger.debug(f'update_contacts :: Done.')
+        debug(f'Done.')
         return
 
     # endregion
