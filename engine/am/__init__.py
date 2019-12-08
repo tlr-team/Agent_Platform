@@ -1,1 +1,1 @@
-from .monolithic import AgentManager
+from .agent_manager import AgentManager

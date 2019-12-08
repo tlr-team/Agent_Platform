@@ -1,6 +1,7 @@
 from time import monotonic
 from hashlib import sha1
 from json import loads, dumps
+from engine.utils.network import get_hash
 
 
 class Contact:
@@ -9,13 +10,15 @@ class Contact:
     wich is used for determinig whether a peer should be tested for eviction.
     '''
 
-    def __init__(self, ip, port, id):
-        assert isinstance(port, int) and isinstance(id, int) and isinstance(port, str)
+    def __init__(self, ip, port, id=None):
+        assert (
+            isinstance(port, int)
+            and (isinstance(id, int) or id is None)
+            and isinstance(ip, str)
+        )
         self.last_seen = None
         self.ip, self.port = ip, port
-        self.id = (
-            id if id else int(sha1((':'.join((ip, str(port)))).encode()).hexdigest())
-        )
+        self.id = id if id is not None else get_hash(ip=ip, port=port)
 
     def to_json(self):
         return dumps({'ip': self.ip, 'port': self.port, 'id': self.id})

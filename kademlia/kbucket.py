@@ -16,13 +16,10 @@ class KBucket:
         (ksize = k)
         (low <= [*ids] <= high)
         '''
-        self.timestamp = None
         self.ksize = k
         self.contacts_dict = OrderedDict()
-        # self.pending_contacts = OrderedDict()
         self.low, self.high = low, high
         self.lock = Lock()
-        self.touch()
 
     @property
     def contacts(self):
@@ -31,9 +28,6 @@ class KBucket:
     @property
     def bucket_is_full(self):
         return len(self.contacts_dict) <= self.ksize
-
-    def touch(self):
-        self.timestamp = monotonic()
 
     def hasinrange(self, contact: Contact):
         return self.low <= contact.Id <= self.high
@@ -70,7 +64,7 @@ class KBucket:
         return len(self) != 0
 
     def __str__(self):
-        return f'<[{self.low} : {self.high}],len={len(self)}>'
+        return f'<[{self.low},{self.high}],len={len(self)}>'
 
     __repr__ = __str__
 

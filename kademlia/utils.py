@@ -1,4 +1,4 @@
-from rpyc import VoidService, SocketStream, connect_stream
+from rpyc import VoidService, SocketStream, connect_stream, connect as rpyc_connect
 from time import monotonic
 from threading import Lock, Thread, Semaphore
 from engine.utils.logger import getLogger
@@ -50,14 +50,6 @@ class KSortedQueue:
         for node in self.queue:
             yield node.value
         self.lock.release()
-
-
-def rpyc_connect(
-    host, port, service=VoidService, config={}, keepalive=False, timeout=3
-):
-    '''Creates an rpyc connection.'''
-    s = SocketStream.connect(host, port, keepalive=keepalive, timeout=timeout)
-    return connect_stream(s, service=VoidService, config=config)
 
 
 class ThreadRunner:

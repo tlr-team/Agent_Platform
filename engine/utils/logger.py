@@ -14,17 +14,15 @@ from logging import (
     FileHandler,
 )
 
-logger_count = 0
-
 
 def setup_logger(name='', logfile='', level=DEBUG):
     root.name = name or 'root'
 
     basicConfig(
-        filename=f'log/{logfile or name}.log',
+        filename=f'log/debug_{logfile or name}.log',
         filemode='w',
         level=level,
-        format='%(asctime)+1s %(levelname)-9s- %(name)+10s: \'%(funcName)s\' %(message)s',
+        format='%(asctime)+1s %(levelname)-6s- %(name)+18s: \'%(funcName)s\' %(message)s',
         datefmt='%H:%M:%S',
     )
 
@@ -36,9 +34,7 @@ def getLogger(name='log', level=DEBUG, to_file=False):
     if not logger.handlers:
         # set log level
         logger.setLevel(level)
-
         logger.propagate = False
-
         # define file handler and set formatter
         handler = FileHandler(f'log/_{name}_.log') if to_file else StreamHandler()
         formatter = Formatter(
@@ -46,6 +42,5 @@ def getLogger(name='log', level=DEBUG, to_file=False):
             datefmt='%H:%M:%S',
         )
         handler.setFormatter(formatter)
-
         logger.addHandler(handler)
     return logger

@@ -7,3 +7,4 @@ Test/
 main.py
 .vscode/*
 Templates
+log/*.log

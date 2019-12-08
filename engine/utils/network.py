@@ -11,10 +11,20 @@ from json import dumps, loads
 from threading import Thread, Semaphore
 from inspect import signature
 from io import BytesIO
+from functools import wraps
+from hashlib import sha1
+
+
+def get_hash(addr=None, ip='', port=''):
+    addr = addr or (ip, port)
+    assert addr[0] and addr[1]
+    return int(sha1((':'.join((addr[0], str(addr[1])))).encode()).hexdigest(), base=16)
+
 
 # decorador que reintenta una función si esta da error cada seconds cantidad de tiempo
 def retry(time_to_sleep, times=1, message='No es posible conectar, reintentando'):
     def FReciever(function):
+        @wraps
         def wrapper(*args, **kwargs):
             count = 0
             while times > count:
@@ -22,7 +32,7 @@ def retry(time_to_sleep, times=1, message='No es posible conectar, reintentando'
                     result = function(*args, **kwargs)
                     return True, result
                 except:
-                    #logger.error(message)
+                    # logger.error(message)
                     if times <= count + 1 and time_to_sleep:
                         sleep(time_to_sleep)
                 count += 1
@@ -79,9 +89,9 @@ def Get_Subnet_Host_Number(ip, mask):
     ip_bin = Ip_To_Binary(ip)
     host = ip_bin[mask:]
     result = 0
-    for i in range(0,len(host)):
+    for i in range(0, len(host)):
         if int(host[i]):
-            result += 2 ** (len(host)-i-1) 
+            result += 2 ** (len(host) - i - 1)
     return result
 
 
@@ -124,7 +134,7 @@ def Tcp_Sock_Reader(sock):
                 buf.write(msg)
                 if msg == b'"':
                     comillas = not comillas
-                if msg in b'{['  and not comillas:
+                if msg in b'{[' and not comillas:
                     llaves += 1
                 if msg in b'}]' and not comillas:
                     llaves -= 1
@@ -160,8 +170,8 @@ def Udp_Response(socket):
 def ServerTcp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto = None, lock = None):
     logger.info(f"Server TCP initiated at {ip,port}")
     with socket(type=SOCK_STREAM) as sock:
-        sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
-        sock.bind((ip,port))
+        sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+        sock.bind((ip, port))
         sock.listen(10)
         while(True):
             if objeto and (Stop_Condition(objeto) if not lock else Stop_Condition(objeto,lock)):
@@ -170,14 +180,15 @@ def ServerTcp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto 
             #print("Condicion TCP: ", Stop_Condition(objeto) if objeto != None else None)
             client, addr = sock.accept()
             logger.debug(f'Recieved TCP Connection from {addr}')
-            Thread(target=client_fucntion,args=(client,addr),daemon=True).start()
+            Thread(target=client_fucntion, args=(client, addr), daemon=True).start()
 
-def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto = None):
+
+def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=None):
     with socket(type=SOCK_DGRAM) as sock:
-        sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
-        sock.bind((ip,port))
-        while(True):
-            if(objeto and Stop_Condition(objeto)):
+        sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+        sock.bind((ip, port))
+        while True:
+            if objeto and Stop_Condition(objeto):
                 break
             msg, addr = sock.recvfrom(1024)
             #logger.debug(f'Recieved UDP Connection from {addr}')
