@@ -155,23 +155,23 @@ def ServerTcp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto 
     with socket(type=SOCK_STREAM) as sock:
         sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
         sock.listen(10)
-        sock.bind(ip,port)
+        sock.bind((ip,port))
         while(True):
             if(objeto and Stop_Condition(objeto)):
                 break
             client, addr = sock.accept()
-            logger.debug(f'Recieved TCP Connection from f{addr}')
+            logger.debug(f'Recieved TCP Connection from {addr}')
             Thread(target=client_fucntion,args=(client,addr),daemon=True).start()
 
 def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto = None):
     with socket(type=SOCK_DGRAM) as sock:
         sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
-        sock.bind(ip,port)
+        sock.bind((ip,port))
         while(True):
             if(objeto and Stop_Condition(objeto)):
                 break
             msg, addr = sock.recvfrom(1024)
-            logger.debug(f'Recieved UDP Connection from f{addr}')
+            logger.debug(f'Recieved UDP Connection from {addr}')
             Thread(target=client_fucntion,args=(msg,addr),daemon=True).start()
 
 

@@ -40,7 +40,7 @@ class Discovering:
     def _serve(self):
         Thread(target=self._write, daemon=True).start()
         Thread(target=self._refresh, daemon=True).start()
-        self.disclogger.info(f'Discover Server Initiated at f{self.port}')
+        self.disclogger.info(f'Discover Server Initiated at {self.port}')
         ServerUdp('',self.port,self._listen, self.disclogger)
 
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
