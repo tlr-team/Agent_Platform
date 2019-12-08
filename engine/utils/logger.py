@@ -19,6 +19,7 @@ logger_count = 0
 
 def setup_logger(name='', logfile='', level=DEBUG):
     root.name = name or 'root'
+    root.setLevel(level)
 
     basicConfig(
         filename=f'log/{logfile or name}.log',
