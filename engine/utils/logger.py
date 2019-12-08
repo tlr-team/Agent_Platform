@@ -1,8 +1,37 @@
-import logging
+from logging import (
+    getLogger as _getLogger,
+    StreamHandler,
+    Formatter,
+    basicConfig,
+    debug,
+    error,
+    exception,
+    info,
+    ERROR,
+    DEBUG,
+    INFO,
+    root,
+    FileHandler,
+)
 
-def getLogger(name='', level=logging.DEBUG):
+logger_count = 0
+
+
+def setup_logger(name='', logfile='', level=DEBUG):
+    root.name = name or 'root'
+
+    basicConfig(
+        filename=f'log/{logfile or name}.log',
+        filemode='w',
+        level=level,
+        format='%(asctime)+1s %(levelname)-9s- %(name)+10s: \'%(funcName)s\' %(message)s',
+        datefmt='%H:%M:%S',
+    )
+
+
+def getLogger(name='log', level=DEBUG, to_file=False):
     # Gets or creates a logger
-    logger = logging.getLogger(name)
+    logger = _getLogger(name)
 
     if not logger.handlers:
         # set log level
@@ -11,19 +40,12 @@ def getLogger(name='', level=logging.DEBUG):
         logger.propagate = False
 
         # define file handler and set formatter
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            '[%(asctime)s] - %(levelname)s - %(name)s.%(message)s', datefmt='%H:%M:%S'
+        handler = FileHandler(f'log/_{name}_.log') if to_file else StreamHandler()
+        formatter = Formatter(
+            fmt='%(asctime)-1s %(levelname)-9s- %(name)+10s: %(message)s',
+            datefmt='%H:%M:%S',
         )
         handler.setFormatter(formatter)
 
-        # add file handler to logger
         logger.addHandler(handler)
     return logger
-
-    # Logs
-    # logger.debug('A debug message')
-    # logger.info('An info message')
-    # logger.warning('Something is not right.')
-    # logger.error('A Major error has happened.')
-    # logger.critical('Fatal error. Cannot continue')

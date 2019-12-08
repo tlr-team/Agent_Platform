@@ -64,11 +64,11 @@ class BucketList:
         )
         return i
 
-    def _get_all_bucket_contacts(self, bucketlist, index):
+    def _get_all_bucket_contacts(self, bucketlist, index) -> iter:
         for contact in bucketlist[index]:
             yield contact
 
-    def get_closest(self, key):
+    def get_closest(self, key) -> list:
         self.buckets_lock.acquire()
         index = self.get_bucket_ind(key)
         self.buckets_lock.release()
@@ -77,46 +77,51 @@ class BucketList:
         left_bucks = self.buckets[:index]
         center = self.buckets[index]
         right_bucks = self.buckets[index + 1 :]
+        res = []
 
-        center = self.buckets[index]
         with center.lock:
             for contact in center:
-                yield contact
-            self.logger.log(
-                f'get_closest :: Sended {len(center)} from the center bucket'
-            )
+                res.append(contact)
+            self.logger.log(f'get_closest :: Sended {len(res)} from the center bucket')
         li = len(left_bucks) - 1
         ri = 0
         while li >= 0 and ri < len(right_bucks):
             with left_bucks[li].lock:
-                yield from self._get_all_bucket_contacts(left_bucks, li)
+                res.extend(self._get_all_bucket_contacts(left_bucks, li))
             if len(left_bucks[li]):
                 self.logger.log(
-                    f'get_closest :: Sended {len(left_bucks[li])} from the {li}th bucket.'
+                    f'get_closest :: Sended {len(left_bucks[li])} until the {li}th bucket.'
                 )
             with right_bucks[ri].lock:
-                yield from self._get_all_bucket_contacts(right_bucks, ri)
+                res.extend(self._get_all_bucket_contacts(right_bucks, ri))
             if len(right_bucks[ri]):
                 self.logger.log(
-                    f'get_closest :: Sended {len(right_bucks[ri])} from the {index + ri + 1}th bucket.'
+                    f'get_closest :: Sended {len(right_bucks[ri])} until the {index + ri + 1}th bucket.'
                 )
             li -= 1
             ri += 1
 
         while li >= 0:
             with left_bucks[li].lock:
-                yield from self._get_all_bucket_contacts(left_bucks, li)
+                res.extend(self._get_all_bucket_contacts(left_bucks, li))
             if len(left_bucks[li]):
                 self.logger.log(
-                    f'get_closest :: Sended {len(left_bucks[li])} from the {li}th bucket.'
+                    f'get_closest :: Sended {len(left_bucks[li])} until the {li}th bucket.'
                 )
             li -= 1
         while ri < len(right_bucks):
             with right_bucks[ri].lock:
-                yield from self._get_all_bucket_contacts(right_bucks, ri)
+                res.extend(self._get_all_bucket_contacts(right_bucks, ri))
             if len(right_bucks[ri]):
                 self.logger.log(
-                    f'get_closest :: Sended {len(right_bucks[ri])} from the {index + ri + 1}th bucket.'
+                    f'get_closest :: Sended {len(right_bucks[ri])} until the {index + ri + 1}th bucket.'
                 )
             ri += 1
+        return res
 
+    def __getitem__(self, i: int):
+        assert i < self.k and i >= 0
+        res = None
+        with self.buckets_lock:
+            res = self.buckets[i]
+        return res
