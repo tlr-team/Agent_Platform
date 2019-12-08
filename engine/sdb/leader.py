@@ -100,7 +100,7 @@ class DbLeader(Leader_Election):
                         break
             if not present:
                 self.dbleaderlogger.debug(f' new ip found {i}')
-                if not i in self.database[-1]:
+                if not i in self.freelist:
                     with self.freelock:
                         self.freelist.append(i)
                 self.node_count += 1
