@@ -32,25 +32,26 @@ class SimpleDataBase:
         Devuelve una lista con a lo sumo 3 agentes que tienen ese servicio
         '''
         with self.lock:
-            n_data = len(self.dbs[tag])
-            response = []
-            if n_data:
-                if n_data <= 3:
-                    for i in range(0,n_data):
-                        self.dblogger.debug(f'i:{i}, self.dbs[i]:{self.dbs[i]}')
-                        response.append(self.dbs[i][0])
-                else:
-                    a = randint(0,n_data-1)
-                    b = randint(0,n_data-1)
-                    while(b == a):
+            if tag in self.dbs:
+                n_data = len(self.dbs[tag])
+                response = []
+                if n_data:
+                    if n_data <= 3:
+                        for i in range(0,n_data):
+                            response.append(self.dbs[tag][0])
+                    else:
+                        a = randint(0,n_data-1)
                         b = randint(0,n_data-1)
-                    c = randint(0,n_data-1)
-                    while(c == a or c == b):
+                        while(b == a):
+                            b = randint(0,n_data-1)
                         c = randint(0,n_data-1)
-                    choice = [a,b,c]
-                    for i in choice:
-                        response.append(self.dbs[tag][i][0])
-            return response
+                        while(c == a or c == b):
+                            c = randint(0,n_data-1)
+                        choice = [a,b,c]
+                        for i in choice:
+                            response.append(self.dbs[tag][i][0])
+                return response
+            return None
 
     def _reset(self):
         '''
