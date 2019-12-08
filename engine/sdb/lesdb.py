@@ -28,13 +28,16 @@ class LESDB(DbLeader, SharedDataBase):
                     while(len(self.freelist)):
                         ip = self.freelist.pop()
                         info = Tcp_Message({'INFO':''},ip,self.dbport)
+                        self.logger.debug(f'recieved info {info} from {ip}')
                         id, backup = self._leinsert(ip)
                         Tcp_Message({'ID':id}, ip, self.dbport)
                         if backup:
                             with self.dblock:
                                 set_backup = self.database[id][0]
                             Tcp_Message({'SET_BACKUP':ip},set_backup,self.dbport, Void)
+                            self.logger.debug(f'Sended SET_BACKUP to {set_backup}')
                             Tcp_Message({'TO_BACKUP':set_backup},ip,self.dbport, Void)
+                            self.logger.debug(f'Sended TO_BACKUP to {ip}')
             sleep(time)
 
     def _remove_dead(self, time):
@@ -46,6 +49,7 @@ class LESDB(DbLeader, SharedDataBase):
                     while(len(self.deadlist)):
                         ip = self.deadlist.pop()
                         self._ledelete(ip)
+                        self.logger.debug(f'Deleted {ip}')
             sleep(time)
 
     def _world_serve(self):
@@ -82,6 +86,8 @@ class LESDB(DbLeader, SharedDataBase):
                 time = 10
                 thread_list.append(Thread(target=self._check, args=(time,), name='Live or Dead Checker'))
                 thread_list.append(Thread(target=self._world_serve, name='World Server Daemon'))
+                thread_list.append(Thread(target=self._assign_work,args=(time,),name='Job Assigner'))
+                thread_list.append(Thread(target=self._remove_dead,args=(time,),name='Dead Burrier'))
             else: 
                 self.logger.debug('Im Worker Now')
                 #thread_list.append(Thread(target=ServerTcp,args=(self.ip,self.dbport,self._process_request, self.logger, lambda x: x.im_leader, self)))
@@ -97,13 +103,13 @@ class LESDB(DbLeader, SharedDataBase):
 
 def Worker_Process(ip, port, function, shared_memory_func, shared_memory, lock):
     logger = getLogger()
-    logger.warning(f'Ha iniciado')
+    logger.debug(f'Worker Server Initieted at {ip},{port}')
     Thread(target=ServerTcp,args=(ip, port, function, logger, shared_memory_func, shared_memory, lock),daemon=True, name='Server').start()
     while(True):
         if shared_memory_func(shared_memory, lock):
-            logger.warning(f'Se cumplio la condicion')
+            logger.debug(f'Im not worker animore')
             exit()
-        logger.warning(f'valor de la memoria compartida, {shared_memory.value}')
+        #logger.warning(f'valor de la memoria compartida, {shared_memory.value}')
         sleep(1)
 
 def validate(shared, lock = None):
