@@ -67,20 +67,22 @@ class LESDB(DbLeader, SharedDataBase):
         keyword = 'get' if 'get' in message else 'post' if 'post' in message else None
         if keyword:
             ip = self._resolve_ip(message,keyword)
+            self.lelogger.debug(f'IP RESOLVED {ip}')
             if ip:
                 response = Tcp_Message(message, ip, self.dbport, Tcp_Sock_Reader if keyword == 'get' else Void)
                 if response:
                     sock.send(response)
             else:
-                print("IP NOT resolved")
+                print(f"IP NOT resolved, {ip}")
         sock.close()
 
     def _resolve_db(self, msg):
-        return 0 if not self.main_count else sha1(str(msg).encode()).digest()[-1] % self.main_count
+        return None if not self.main_count else sha1(str(msg).encode()).digest()[-1] % self.main_count
 
     def _resolve_ip(self, msg, keyword):
         ID = self._resolve_db(msg[keyword])
-        return self.database[ID] if ID else None
+        self.lelogger.debug(f'ID Found {ID}')
+        return self.database[ID][0] if ID != None else None
 
     def serve(self,time):
         Thread(target=self._serve,daemon=True,name='Discover Server Daemon').start()
