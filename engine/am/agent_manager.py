@@ -129,9 +129,8 @@ class AgentManager(KademliaProtocol):
                 if c.root.join_to_network(contact.to_json()):
                     break
                 error('connection with himself has crashed')
-                sleep(0.4)
             except Exception as e:
                 error(f'Could\'nt connect to service. Exception:\n{e}')
                 debug(f'Sleep a while to retry')
-                sleep(0.4)
+            sleep(1)
         info(f'SERVER STARTED')

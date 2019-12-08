@@ -86,8 +86,9 @@ class KademliaProtocol(Service):
                     while count < 5:
                         try:
                             conn = connect(ip, port)
-                            debug(f'')
+                            debug(f'Connection established with ({ip}:{port})')
                             resp = conn.root.ping(self.contact.to_json())
+                            debug(f'<PING> to ({ip}:{port}) response: {resp}.')
                             if resp:
                                 contact = Contact.from_json(resp)
                                 debug(f'Connection established with ({ip}:{port}).')
