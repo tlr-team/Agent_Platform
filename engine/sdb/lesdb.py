@@ -27,17 +27,18 @@ class LESDB(DbLeader, SharedDataBase):
                 with self.freelock:
                     while(len(self.freelist)):
                         ip = self.freelist.pop()
-                        info = Tcp_Message({'INFO':''},ip,self.dbport)
-                        self.logger.debug(f'recieved info {info} from {ip}')
-                        id, backup = self._leinsert(ip)
-                        Tcp_Message({'ID':id}, ip, self.dbport)
-                        if backup:
-                            with self.dblock:
-                                set_backup = self.database[id][0]
-                            Tcp_Message({'SET_BACKUP':ip},set_backup,self.dbport, Void)
-                            self.logger.debug(f'Sended SET_BACKUP to {set_backup}')
-                            Tcp_Message({'TO_BACKUP':set_backup},ip,self.dbport, Void)
-                            self.logger.debug(f'Sended TO_BACKUP to {ip}')
+                        if ip != self.ip:
+                            info = Tcp_Message({'INFO':''},ip,self.dbport)
+                            self.logger.debug(f'recieved info {info} from {ip}')
+                            id, backup = self._leinsert(ip)
+                            Tcp_Message({'ID':id}, ip, self.dbport)
+                            if backup:
+                                with self.dblock:
+                                    set_backup = self.database[id][0]
+                                Tcp_Message({'SET_BACKUP':ip},set_backup,self.dbport, Void)
+                                self.logger.debug(f'Sended SET_BACKUP to {set_backup}')
+                                Tcp_Message({'TO_BACKUP':set_backup},ip,self.dbport, Void)
+                                self.logger.debug(f'Sended TO_BACKUP to {ip}')
             sleep(time)
 
     def _remove_dead(self, time):
