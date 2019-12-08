@@ -23,7 +23,9 @@ class SimpleDataBase:
                 if not agent in self.dbs[tag]:
                     self.dbs[tag].append((agent,6))
                 else:
-                    self.dbs[tag][1] = 6
+                    for i in self.dbs[tag]:
+                        if agent in i:
+                            self.dbs[tag][i] = (agent,6)
 
     def _get(self,tag):
         '''
@@ -35,6 +37,7 @@ class SimpleDataBase:
             if n_data:
                 if n_data <= 3:
                     for i in range(0,n_data):
+                        self.dblogger.debug(f'i:{i}, self.dbs[i]:{self.dbs[i]} self.dbs[i][0]:{self.dbs[i][0]}')
                         response.append(self.dbs[i][0])
                 else:
                     a = randint(0,n_data-1)
