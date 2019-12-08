@@ -7,6 +7,7 @@ from threading import Lock
 from ..utils.logger import getLogger
 from time import sleep
 from ..utils.network import Tcp_Message
+from threading import Thread
 
 class LDatabase:
     def __init__(self):
@@ -61,8 +62,7 @@ class LDatabase:
 
 class DbLeader(Leader_Election):
     def __init__(self, ip, mask, leport):
-        self.ip = ip
-        self.le = Leader_Election(ip, mask, leport)
+        Leader_Election.__init__(self,ip,mask,leport)
         self.database = {}
         self.freelist = []
         self.deadlist = []
@@ -71,16 +71,16 @@ class DbLeader(Leader_Election):
         self.dblock = Lock()
         self.freelock = Lock()
         self.deadlock = Lock()
-        self.logger = getLogger()
 
-    def _start(self):
-        self.le._start()
+    def _dbleader_start(self, time):
+        Thread(target=self._check, args=(time), daemon=True, name="Leader Checker")
+        self._start()     
 
     def _check(self, time):
         while(True):
-            if not self.le.im_leader:
+            if not self.im_leader:
                 break
-            lista = self.le.discover.Get_Partners()
+            lista = self.Get_Partners()
             self._check_newones(lista)
             self._check_deadones(lista)            
             sleep(time)

@@ -7,6 +7,7 @@ from .sdb import SharedDataBase
 from time import sleep
 from ..utils.network import Tcp_Message, Void, Tcp_Sock_Reader, ServerTcp
 from hashlib import sha1
+from threading import Thread
 
 
 class LESDB(DbLeader, SharedDataBase):
@@ -66,6 +67,24 @@ class LESDB(DbLeader, SharedDataBase):
     def _resolve_ip(self, msg, keyword):
         ID = self._resolve_db(msg[keyword])
         return self.database[ID]
+
+    def serve(self,time):
+        Thread(target=self._check_leader,daemon = True, name='Leader Election Daemon').start()
+        Thread(target=self._serve,daemon=True,name='Discover Server Daemon').start()
+
+        while(True):
+            thread_list = []
+            if self.im_leader:
+                self.logger.debug('Im Leader Now')
+                thread_list.append(Thread(target=self._check, args=(10), name='Live or Dead Checker'))
+            else: 
+                self.logger.debug('Im Worker Now')
+                thread_list.append(Thread(target=ServerTcp,args=(self.ip,self.dbport,self._process_request), daemon=True))
+
+            for i in thread_list:
+                i.join()
+            self.logger.debg(f'Changed Function')
+        pass
 
 
 

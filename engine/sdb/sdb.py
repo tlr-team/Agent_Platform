@@ -21,11 +21,6 @@ class SharedDataBase(SimpleDataBase):
         self.to_backup = ""
         self.id = -1
 
-        Thread(target=ServerTcp,args=(self.ip,self.dbport,self._process_request), daemon=True).start()
-        self.logger.info(f'Database Service Initiated at {self.ip}, {self.dbport}')
-        while(True):
-            sleep(10)
-    
     def _process_request(self, sock, addr):
         if not self.im_backup or self.to_backup == addr[0]:
             request = Tcp_Sock_Reader(sock)
