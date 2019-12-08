@@ -11,9 +11,7 @@ from json import dumps, loads
 from threading import Thread, Semaphore
 from inspect import signature
 from io import BytesIO
-from .logger import getLogger
 
-logger = getLogger(name='utils')
 # decorador que reintenta una función si esta da error cada seconds cantidad de tiempo
 def retry(time_to_sleep, times=1, message='No es posible conectar, reintentando'):
     def FReciever(function):
@@ -24,7 +22,7 @@ def retry(time_to_sleep, times=1, message='No es posible conectar, reintentando'
                     result = function(*args, **kwargs)
                     return True, result
                 except:
-                    logger.error(message)
+                    #logger.error(message)
                     if times <= count + 1 and time_to_sleep:
                         sleep(time_to_sleep)
                 count += 1
@@ -157,6 +155,7 @@ def ServerTcp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto 
     with socket(type=SOCK_STREAM) as sock:
         sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
         sock.listen(10)
+        sock.bind(ip,port)
         while(True):
             if(objeto and Stop_Condition(objeto)):
                 break
@@ -167,6 +166,7 @@ def ServerTcp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto 
 def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto = None):
     with socket(type=SOCK_DGRAM) as sock:
         sock.setsockopt(SOL_SOCKET,SO_REUSEADDR,True)
+        sock.bind(ip,port)
         while(True):
             if(objeto and Stop_Condition(objeto)):
                 break

@@ -24,7 +24,7 @@ def Void(time):
     pass
 
 class Discovering:
-    def __init__(self, port, broadcast_addr, logger = getLogger(), time=10, ttl = 3):
+    def __init__(self, port, broadcast_addr, logger, time=10, ttl = 3):
         self.partners = {}
         self.port = port
         self.b_addr = broadcast_addr
@@ -66,6 +66,7 @@ class Discovering:
                     if val > 1:
                         temp[name] = val - 1
                 self.partners = temp
+                self.disclogger.debug(f'partnerts :{temp}')
             sleep(self.time)
 
 class Leader_Election(Discovering):
