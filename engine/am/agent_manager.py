@@ -61,7 +61,7 @@ class AgentManager(KademliaProtocol):
             try:
                 debug('Creating instace of ThreadedServer')
                 server = ThreadedServer(
-                    self.__class__.__name__.split('Service')[0],
+                    self.__class__,
                     port=port,
                     registrar=UDPRegistryClient(),
                     protocol_config={'allow_public_attrs': True},
@@ -70,7 +70,7 @@ class AgentManager(KademliaProtocol):
                 server.start()
                 break
             except Exception as e:
-                error(f'Error starting service Exception: \n{e}')
+                error(f'Error starting service Exception: \n{e}\n{e.__traceback__}')
                 debug('Sleep a while and retry')
                 if not server is None:
                     server.close()
@@ -80,7 +80,7 @@ class AgentManager(KademliaProtocol):
         ip = None
         try:
             debug('Discover peers to obtain ip.')
-            peers = discover(self.service)
+            peers = discover(self.service_name)
             debug(f'Peers encountred: {peers}')
             if not peers:
                 raise Exception('No peer was discovered.')
@@ -99,6 +99,7 @@ class AgentManager(KademliaProtocol):
 
     def start(self, port=None, port_range=(10000, 10100), first_node=False):
         ''' Conect to the kademlia network, and wait for rpc\'s '''
+        print('look in logs ;)...')
         if port is None:
             port = randint(*port_range)
         info(f'Starting on port {port}')
@@ -109,22 +110,28 @@ class AgentManager(KademliaProtocol):
         debug('Start tread for start service.')
         thread_service = Thread(target=self.__service_starter, args=(port,))
         thread_service.start()
-        sleep(2)
+        sleep(5)
 
         if first_node:
-            thread_service.join()
-            thread_server.join()
-            debug(f'first node started successfuly')
+            debug(f'SERVER STARTED (first node)')
             return
         ip = self.get_ip()
         contact = Contact(ip, port)
-        assert contact.id == get_hash((ip, port)), f'Calculated hash not correct.'
+        assert contact.id == get_hash(
+            (ip, port)
+        ), f'Calculated hash not correct. -> {contact.id} == {get_hash((ip, port))}'
         while True:
             try:
-                debug(f'Trying to connect to service {self.service}')
+                debug(f'Trying to connect to service {self.service_name}')
                 c = connect(ip, port)
                 debug(f'Pinging to ({ip}:{port})')
                 c.ping()
-                result = c.root.join_to_network
+                if c.root.join_to_network(contact.to_json()):
+                    break
+                error('connection with himself has crashed')
+                sleep(0.4)
             except Exception as e:
                 error(f'Could\'nt connect to service. Exception:\n{e}')
+                debug(f'Sleep a while to retry')
+                sleep(0.4)
+        info(f'SERVER STARTED')

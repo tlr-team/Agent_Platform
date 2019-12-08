@@ -9,6 +9,7 @@ from .utils import rpyc_connect, KSortedQueue, ThreadRunner
 from engine.utils.network import retry
 from queue import Queue, Empty
 from random import randint
+from time import sleep
 from socket import (
     socket,
     SOCK_DGRAM,
@@ -46,7 +47,7 @@ class KademliaProtocol(Service):
         self.contact: Contact
     
     @property
-    def service(self):
+    def service_name(self):
         return self.__class__.__name__.split('Service')[0]
 
     # region RemoteCall functions
@@ -383,7 +384,7 @@ class KademliaProtocol(Service):
 
     def connect_to(self, contact):
         debug(f'trying to connect to {contact}.')
-        connection = connect(contact.ip, contact.port, {'timeout'=1})
+        connection = connect(contact.ip, contact.port, {'timeout':1})
         connection.ping()
         debug(f'Added Contact:{contact}')
         return connection
@@ -403,6 +404,7 @@ class KademliaProtocol(Service):
         if to_reciever == self.contact:
             return None
 
+        con = self.connect_to(to_reciever)
         result = con.root.store(
             self.contact.to_json(), int(key), str(value), store_time
         )
@@ -413,7 +415,6 @@ class KademliaProtocol(Service):
         if to_reciever == self.contact:
             return None
 
-        )
         con = self.connect_to(to_reciever)
         result = con.root.find_node(self.contact.to_json(), int(key))
         return result
@@ -423,7 +424,6 @@ class KademliaProtocol(Service):
         if to_reciever == self.contact:
             return None
 
-        )
         con = self.connect_to(to_reciever)
         result = con.root.find_value(self.contact.to_json(), int(key))
         return result
@@ -449,5 +449,4 @@ class KademliaProtocol(Service):
             bucket.lock.release()
         debug(f'Done.')
         return
-
 

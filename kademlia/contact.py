@@ -11,10 +11,14 @@ class Contact:
     '''
 
     def __init__(self, ip, port, id=None):
-        assert isinstance(port, int) and isinstance(id, int) and isinstance(port, str)
+        assert (
+            isinstance(port, int)
+            and (isinstance(id, int) or id is None)
+            and isinstance(ip, str)
+        )
         self.last_seen = None
         self.ip, self.port = ip, port
-        self.id = id if id is None else get_hash(ip=ip, port=port)
+        self.id = id if id is not None else get_hash(ip=ip, port=port)
 
     def to_json(self):
         return dumps({'ip': self.ip, 'port': self.port, 'id': self.id})
