@@ -6,6 +6,8 @@ from .leader import DbLeader
 from .sdb import SharedDataBase
 from time import sleep
 from ..utils.network import Tcp_Message, Void, Tcp_Sock_Reader, ServerTcp
+from hashlib import sha1
+
 
 class LESDB(DbLeader, SharedDataBase):
     def __init__(self, ip, mask, dbport, leport, world_port):
@@ -43,10 +45,27 @@ class LESDB(DbLeader, SharedDataBase):
             sleep(time)
 
     def _world_serve(self):
-        pass
+        self.logger.info(f'World Server Initiated at {self.world_port}')
+        ServerTcp(self.ip,self.world_port,self._world_attend,self.logger,lambda x: x.im_leader,self)
 
     def _world_attend(self, sock, addr):
-        pass
+        message = Tcp_Sock_Reader(sock)
+        self.logger.debug(f'Recieved {message} from {addr}')
+        keyword = 'get' if 'get' in message else 'post' if 'post' in message else None
+        if keyword:
+            ip = self._resolve_ip(message,keyword)
+            if ip:
+                response = Tcp_Message(message, ip, self.dbport, Tcp_Sock_Reader if keyword == 'get' else Void)
+                if response:
+                    sock.send(response)
+        sock.close()
+
+    def _resolve_db(self, msg):
+        return sha1(str(msg).encode()).digest()[-1] % self.main_count
+
+    def _resolve_ip(self, msg, keyword):
+        ID = self._resolve_db(msg[keyword])
+        return self.database[ID]
 
 
 
