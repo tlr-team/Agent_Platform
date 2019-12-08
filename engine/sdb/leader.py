@@ -62,7 +62,7 @@ class LDatabase:
 
 
 class DbLeader(Leader_Election):
-    def __init__(self, ip, mask, leport, logger = getLogger):
+    def __init__(self, ip, mask, leport, logger = getLogger()):
         Leader_Election.__init__(self,ip,mask,leport, logger)
         self.database = {}
         self.freelist = []

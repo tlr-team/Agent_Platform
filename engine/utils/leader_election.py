@@ -24,7 +24,7 @@ def Void(time):
     pass
 
 class Discovering:
-    def __init__(self, port, broadcast_addr, logger, time=10, ttl = 3):
+    def __init__(self, port, broadcast_addr, logger, time=10, ttl = 10):
         self.partners = {}
         self.port = port
         self.b_addr = broadcast_addr
