@@ -30,7 +30,7 @@ class SimpleDataBase:
         Devuelve una lista con a lo sumo 3 agentes que tienen ese servicio
         '''
         with self.lock:
-            n_data = len(self.dbs.keys()) 
+            n_data = len(self.dbs[tag])
             response = []
             if n_data:
                 if n_data <= 3:
