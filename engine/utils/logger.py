@@ -21,7 +21,7 @@ def setup_logger(name='', logfile='', level=DEBUG):
     root.name = name or 'root'
 
     basicConfig(
-        filename=f'log/{logfile or name}.log',
+        filename=f'log/debug_{logfile or name}.log',
         filemode='w',
         level=level,
         format='%(asctime)+1s %(levelname)-9s- %(name)+10s: \'%(funcName)s\' %(message)s',

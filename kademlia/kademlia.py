@@ -3,7 +3,7 @@ from .bucketlist import BucketList
 from .storage import StorageManager  # TODO: implement the SorageManager
 from threading import Thread, Lock
 from engine.utils.logger import setup_logger, debug, error, info
-from rpyc import Service,discover
+from rpyc import Service,discover,connect
 from rpyc.utils.factory import DiscoveryError 
 from .utils import rpyc_connect, KSortedQueue, ThreadRunner
 from engine.utils.network import retry
@@ -41,6 +41,10 @@ class KademliaProtocol(Service):
         self.started = False
         self.bucket_list: BucketList
         self.contact: Contact
+    
+    @property
+    def service(self):
+        return self.__class__.__name__.split('Service')[0]
 
     # region RemoteCall functions
     def exposed_init(self, contact):
@@ -377,7 +381,7 @@ class KademliaProtocol(Service):
 
     def connect_to(self, contact):
         debug(f'trying to connect to {contact}.')
-        connection = rpyc_connect(contact.ip, contact.port, timeout=1)
+        connection = connect(contact.ip, contact.port, {'timeout'=1})
         connection.ping()
         debug(f'Added Contact:{contact}')
         return connection
