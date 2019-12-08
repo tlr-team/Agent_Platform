@@ -38,7 +38,7 @@ class SimpleDataBase:
                 if n_data:
                     if n_data <= 3:
                         for i in range(0,n_data):
-                            response.append(self.dbs[tag][0])
+                            response.append(self.dbs[tag][i][0])
                     else:
                         a = randint(0,n_data-1)
                         b = randint(0,n_data-1)
