@@ -134,17 +134,23 @@ def Tcp_Sock_Reader(sock):
 #Envia un mensaje tcp y devuelve la respuesta
 def Tcp_Message(msg,ip,port, function = Tcp_Sock_Reader):
     with socket(type= SOCK_STREAM) as sock:
-        sock.connect((ip,port))
-        tmp = Encode_Request(msg)
-        sock.send(tmp)
-        response = function(sock)
+        try:
+            sock.connect((ip,port))
+            tmp = Encode_Request(msg)
+            sock.send(tmp)
+            response = function(sock)
+        except:
+            return None
     return response
 
 
 # Envia un mensaje udp
 def Udp_Message(msg, ip, port, function=Void):
     with socket(type=SOCK_DGRAM) as sock:
-        sock.sendto(Encode_Request(msg), (ip, port))
+        try:
+            sock.sendto(Encode_Request(msg), (ip, port))
+        except:
+            return None
         return function(sock)
 
 

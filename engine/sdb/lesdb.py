@@ -29,16 +29,17 @@ class LESDB(DbLeader, SharedDataBase):
                         ip = self.freelist.pop()
                         if ip != self.ip:
                             info = Tcp_Message({'INFO':''},ip,self.dbport)
-                            self.logger.debug(f'recieved info {info} from {ip}')
-                            id, backup = self._leinsert(ip)
-                            Tcp_Message({'ID':id}, ip, self.dbport)
-                            if backup:
-                                with self.dblock:
-                                    set_backup = self.database[id][0]
-                                Tcp_Message({'SET_BACKUP':ip},set_backup,self.dbport, Void)
-                                self.logger.debug(f'Sended SET_BACKUP to {set_backup}')
-                                Tcp_Message({'TO_BACKUP':set_backup},ip,self.dbport, Void)
-                                self.logger.debug(f'Sended TO_BACKUP to {ip}')
+                            if info:
+                                self.logger.debug(f'recieved info {info} from {ip}')
+                                id, backup = self._leinsert(ip)
+                                Tcp_Message({'ID':id}, ip, self.dbport)
+                                if backup:
+                                    with self.dblock:
+                                        set_backup = self.database[id][0]
+                                    Tcp_Message({'SET_BACKUP':ip},set_backup,self.dbport, Void)
+                                    self.logger.debug(f'Sended SET_BACKUP to {set_backup}')
+                                    Tcp_Message({'TO_BACKUP':set_backup},ip,self.dbport, Void)
+                                    self.logger.debug(f'Sended TO_BACKUP to {ip}')
             sleep(time)
 
     def _remove_dead(self, time):
@@ -92,7 +93,7 @@ class LESDB(DbLeader, SharedDataBase):
             else: 
                 self.logger.debug('Im Worker Now')
                 #thread_list.append(Thread(target=ServerTcp,args=(self.ip,self.dbport,self._process_request, self.logger, lambda x: x.im_leader, self)))
-                thread_list.append(Process(target=Worker_Process,args=(self.ip,self.port, self._process_request, validate, self.leader_dhared_memory, self.leaderprocesslock)))
+                thread_list.append(Process(target=Worker_Process,args=(self.ip,self.dbport, self._process_request, validate, self.leader_dhared_memory, self.leaderprocesslock)))
 
             for i in thread_list:
                 i.start()
