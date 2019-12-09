@@ -1,0 +1,10 @@
+ 
+.directory
+__pycache__/
+test/
+test*.py
+Test/
+main.py
+.vscode/*
+Templates
+log/*.log
