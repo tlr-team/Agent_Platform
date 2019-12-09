@@ -43,7 +43,7 @@ class KBucket:
             return False
 
     def remove_contact(self, contact: Contact):
-        if contact in self.contacts_dict:
+        if contact.id in self.contacts_dict:
             del self.contacts_dict[contact.id]
             return True
         return False
