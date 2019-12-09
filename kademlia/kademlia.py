@@ -116,8 +116,7 @@ class KademliaProtocol(Service):
                     self.exposed_iter_find_node(self.contact.id)
                 except Exception as e:
                     raise Exception(f'Interrupted first exposed_iter_find_node because {e}.')
-                buck_len = len(self.bucket_list)
-                for i in range(buck_len):
+                for i in range(self.k):
                     if not self.bucket_list[i]:
                         continue
                     count = 0
