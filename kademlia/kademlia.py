@@ -58,7 +58,6 @@ class KademliaProtocol(Service):
             contact if isinstance(contact, Contact) else Contact.from_json(contact)
         )
         self.bucket_list = BucketList(self.contact.id, k=self.k, b=self.b)
-        debug(f'Node Initialized (id:{self.contact.id}).')
         self.initialized = True
         debug(
             f'Node Initialized(id:{self.contact.id},k:{self.k},b:{self.b}'
@@ -66,6 +65,7 @@ class KademliaProtocol(Service):
         return True
 
     def exposed_join_to_network(self, contact: str):
+        debug(f'Recieved {contact}, to creatme.')
         self.exposed_init(contact)
         contact = Contact.from_json(contact)
         while not self.started:
@@ -77,6 +77,7 @@ class KademliaProtocol(Service):
                     nodes = discover(self.service_name)
                     debug(f'Finded: {nodes}.')
                 except DiscoveryError as e:
+                    error(f'Service:{self.service_name} not found - {e}.')
                     raise DiscoveryError(f'Service:{self.service_name} not found - {e}.')
                 _any = 0
                 for ip,port in nodes:
@@ -86,7 +87,7 @@ class KademliaProtocol(Service):
                     while count < 5:
                         try:
                             conn = connect(ip, port)
-                            debug(f'Connection established with ({ip}:{port})')
+                            debug(f'Connection established with ({ip}:{port}), attemp: {count}.')
                             resp = conn.root.ping(self.contact.to_json())
                             debug(f'<PING> to ({ip}:{port}) response: {resp}.')
                             if resp:
@@ -94,7 +95,8 @@ class KademliaProtocol(Service):
                                 debug(f'Connection established with ({ip}:{port}).')
                                 break
                             else:
-                                raise Exception(f'connection not initialized.')
+                                error(f'Bad Response resul({resp}) from ({ip}:{port}).')
+                                raise Exception(f'connection fail.')
                         except Exception as e:
                             error(f'Retrying to connect to ({ip}:{port}), Exception:\n{e}')
                             count += 1
@@ -129,7 +131,7 @@ class KademliaProtocol(Service):
             except Exception as e:
                 error(f'NODE NOT JOINNED {e}')
                 debug(f'sleep a while for keep retrying')
-                sleep(0.3)
+                sleep(0.3)  
         return False
              
     def exposed_ping(self, sender: Contact):
