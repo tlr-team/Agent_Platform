@@ -29,8 +29,9 @@ class KBucket:
     def bucket_is_full(self):
         return len(self.contacts_dict) <= self.ksize
 
-    def hasinrange(self, contact: Contact):
-        return self.low <= contact.Id <= self.high
+    def hasinrange(self, id):
+        assert isinstance(id, int)
+        return self.low <= id <= self.high
 
     def add_contact(self, contact: Contact):
         self.remove_contact(contact)

@@ -99,7 +99,8 @@ class KademliaProtocol(Service):
                                 error(f'Bad Response resul({resp}) from ({ip}:{port}).')
                                 raise Exception(f'connection fail.')
                         except Exception as e:
-                            error(f'Retrying to connect to ({ip}:{port}), Exception:\n{e}')
+                            error(f'Exception:\n{e}')
+                            debug(f'Retrying to connect to ({ip}:{port})')
                             count += 1
                     if count == 5:
                         debug(f'Connection not established with ({ip}:{port})')
