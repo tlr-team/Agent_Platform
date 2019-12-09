@@ -47,8 +47,8 @@ class AgentManager(KademliaProtocol):
         while True:
             server = None
             try:
-                debug(f'Starting registration server.')
                 server = UDPRegistryServer()
+                debug(f'Starting registration server.')
                 server.start()
                 break
             except Exception as e:
@@ -106,15 +106,11 @@ class AgentManager(KademliaProtocol):
         debug(f'Start tread for start register server.')
         thread_server = Thread(target=self.__register_server_starter)
         thread_server.start()
-        sleep(4)
         debug('Start tread for start service.')
         thread_service = Thread(target=self.__service_starter, args=(port,))
         thread_service.start()
-        sleep(5)
+        sleep(7)
 
-        if first_node:
-            debug(f'SERVER STARTED (first node)')
-            return
         ip = self.get_ip()
         contact = Contact(ip, port)
         assert contact.id == get_hash(
@@ -123,15 +119,15 @@ class AgentManager(KademliaProtocol):
         while True:
             try:
                 debug(f'Trying to connect to service {self.service_name}')
-                c = connect(ip, port)
+                c = connect(ip, port, config={'sync_request_timeout': 1000000})
                 debug(f'Pinging to ({ip}:{port})')
                 c.ping()
+                debug(f'Ping to ({ip}:{port})')
                 if c.root.join_to_network(contact.to_json()):
                     break
                 error('connection with himself has crashed')
-                sleep(0.4)
             except Exception as e:
                 error(f'Could\'nt connect to service. Exception:\n{e}')
                 debug(f'Sleep a while to retry')
-                sleep(0.4)
+            sleep(1)
         info(f'SERVER STARTED')
