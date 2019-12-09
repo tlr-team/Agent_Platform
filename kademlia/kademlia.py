@@ -54,19 +54,20 @@ class KademliaProtocol(Service):
     def exposed_init(self, contact):
         if self.initialized:
             return True
+        
         self.contact = (
             contact if isinstance(contact, Contact) else Contact.from_json(contact)
         )
         self.bucket_list = BucketList(self.contact.id, k=self.k, b=self.b)
         self.initialized = True
         debug(
-            f'Node Initialized(id:{self.contact.id},k:{self.k},b:{self.b}'
+            f'Node Initialized(id:{self.contact.id},ip:{self.contact.ip}),k:{self.k},b:{self.b}'
         )
         return True
 
     def exposed_join_to_network(self, contact: str):
         debug(f'Recieved {contact}, to creatme.')
-        self.exposed_init(contact)
+        assert self.exposed_init(contact)
         contact = Contact.from_json(contact)
         while not self.started:
             try:
@@ -102,6 +103,7 @@ class KademliaProtocol(Service):
                             count += 1
                     if count == 5:
                         debug(f'Connection not established with ({ip}:{port})')
+                        sleep(1)
                         continue
                     _any += 1
                     assert self.contact != contact
