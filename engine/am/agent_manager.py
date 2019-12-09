@@ -61,7 +61,7 @@ class AgentManager(KademliaProtocol):
             try:
                 debug('Creating instace of ThreadedServer')
                 server = ThreadedServer(
-                    self.__class__,
+                    self.__class__(),
                     port=port,
                     registrar=UDPRegistryClient(),
                     protocol_config={'allow_public_attrs': True},
