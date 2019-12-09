@@ -61,7 +61,7 @@ class AgentManager(KademliaProtocol):
             try:
                 debug('Creating instace of ThreadedServer')
                 server = ThreadedServer(
-                    self.__class__,
+                    self.__class__(),
                     port=port,
                     registrar=UDPRegistryClient(),
                     protocol_config={'allow_public_attrs': True},
@@ -106,10 +106,11 @@ class AgentManager(KademliaProtocol):
         debug(f'Start tread for start register server.')
         thread_server = Thread(target=self.__register_server_starter)
         thread_server.start()
+        sleep(3)
         debug('Start tread for start service.')
         thread_service = Thread(target=self.__service_starter, args=(port,))
         thread_service.start()
-        sleep(7)
+        sleep(3)
 
         ip = self.get_ip()
         contact = Contact(ip, port)
@@ -120,10 +121,11 @@ class AgentManager(KademliaProtocol):
             try:
                 debug(f'Trying to connect to service {self.service_name}')
                 c = connect(ip, port, config={'sync_request_timeout': 1000000})
-                debug(f'Pinging to ({ip}:{port})')
-                c.ping()
-                debug(f'Ping to ({ip}:{port})')
-                if c.root.join_to_network(contact.to_json()):
+                res = c.ping()
+                debug(f'Ping to ({ip}:{port}) res({res})')
+                res = c.root.join_to_network(contact.to_json())
+                debug(f'\'join_to_network\' to ({ip}:{port}) res({res})')
+                if res:
                     break
                 error('connection with himself has crashed')
             except Exception as e:

@@ -2,6 +2,7 @@ from time import monotonic
 from collections import OrderedDict
 from .contact import Contact
 from threading import Lock
+from math import log2
 
 
 class KBucket:
@@ -29,8 +30,9 @@ class KBucket:
     def bucket_is_full(self):
         return len(self.contacts_dict) <= self.ksize
 
-    def hasinrange(self, contact: Contact):
-        return self.low <= contact.Id <= self.high
+    def hasinrange(self, id):
+        assert isinstance(id, int)
+        return self.low <= id <= self.high
 
     def add_contact(self, contact: Contact):
         self.remove_contact(contact)
@@ -42,7 +44,7 @@ class KBucket:
             return False
 
     def remove_contact(self, contact: Contact):
-        if contact in self.contacts_dict:
+        if contact.id in self.contacts_dict:
             del self.contacts_dict[contact.id]
             return True
         return False
@@ -64,7 +66,7 @@ class KBucket:
         return len(self) != 0
 
     def __str__(self):
-        return f'<[{self.low},{self.high}],len={len(self)}>'
+        return f'<BIT:{log2(self.low)},LEN={len(self)},CONTENT:{[list(i)[1:] for i in self.contacts]}>'
 
     __repr__ = __str__
 

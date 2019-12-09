@@ -41,3 +41,6 @@ class Contact:
 
     def touch(self):
         self.last_seen = monotonic()
+
+    def __iter__(self):
+        yield from (self.id, self.ip, self.port)

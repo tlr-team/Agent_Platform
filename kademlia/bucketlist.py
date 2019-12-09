@@ -3,6 +3,8 @@ from .contact import Contact
 from threading import Lock
 from engine.utils.logger import getLogger
 from .utils import to_str
+from engine.utils.logger import setup_logger, debug, error, info
+from json import dump
 
 
 class BucketList:
@@ -18,7 +20,6 @@ class BucketList:
             KBucket(low=2 ** i, high=2 ** (i + 1) - 1, k=k)
             for i in range(self.b)  # b = 160
         ]
-        self.logger = getLogger(name='BucketList')
         # lock for syncronous use of the bucketlist
         self.buckets_lock = Lock()
 
@@ -31,37 +32,35 @@ class BucketList:
         return self.__our_id
 
     def add_contact(self, contact: Contact):
-        self.logger.debug(f'add_contact :: Adding contact:{contact}.')
+        debug(f'[bucketlist] Adding contact: {contact}.')
         contact.touch()
         with self.buckets_lock:
             bucket = self.get_bucket(contact.id)
         bucket.lock.acquire()
         result = bucket.add_contact(contact)  # false -> the bucket is full
         bucket.lock.release()
-        self.logger.debug(
-            f'add_contact :: contact:{contact}' + f' added to bucket {bucket}.'
+        debug(
+            f'[bucketlist] Contact:{contact}' + f' added to bucket {bucket}.'
             if result
             else f' bucket {bucket} is full.'
         )
+        with open('log/bucket_list.log', 'w') as f:
+            dump([str(i) for i in self.buckets if i], f, indent=True)
         return result
 
     def get_bucket(self, key):
-        self.logger.debug(f'get_bucket :: key:{key}.')
+        debug(f'[bucketlist] key:{key}.')
         i = self.get_bucket_ind(key)
         bucket = self.buckets[i]
-        self.logger.debug(f'get_bucket :: Index:{i} Bucket:{bucket}.')
+        debug(f'[bucketlist] Index:{i} Bucket:{bucket}.')
         return bucket
 
     def get_bucket_ind(self, key):
-        self.logger.debug(f'get_bucket_ind :: key:{key}.')
+        debug(f'[bucketlist] key:{key}.')
         distance = key ^ self.id
-        self.logger.debug(
-            f'get_bucket_ind :: Distance:{distance} = key:{key} ^ id:{self.id}.'
-        )
+        debug(f'[bucketlist] Distance:{distance} = key:{key} ^ id:{self.id}.')
         i = [i for i in range(self.b) if self.buckets[i].hasinrange(distance)].pop()
-        self.logger.debug(
-            f'get_bucket_ind :: Index:{i}, str(distance)={to_str(distance)}.'
-        )
+        debug(f'[bucketlist] Index:{i}, str(distance)={to_str(distance)}.')
         return i
 
     def _get_all_bucket_contacts(self, bucketlist, index) -> iter:
@@ -72,7 +71,7 @@ class BucketList:
         self.buckets_lock.acquire()
         index = self.get_bucket_ind(key)
         self.buckets_lock.release()
-        self.logger.debug(f'get_closest :: id:{key}, (id)bucket-index:{index}')
+        debug(f'[bucketlist] id:{key}, (id)bucket-index:{index}')
 
         left_bucks = self.buckets[:index]
         center = self.buckets[index]
@@ -82,21 +81,21 @@ class BucketList:
         with center.lock:
             for contact in center:
                 res.append(contact)
-            self.logger.log(f'get_closest :: Sended {len(res)} from the center bucket')
+            debug(f'[bucketlist] Sended {len(res)} from the center bucket')
         li = len(left_bucks) - 1
         ri = 0
         while li >= 0 and ri < len(right_bucks):
             with left_bucks[li].lock:
                 res.extend(self._get_all_bucket_contacts(left_bucks, li))
             if len(left_bucks[li]):
-                self.logger.log(
-                    f'get_closest :: Sended {len(left_bucks[li])} until the {li}th bucket.'
+                debug(
+                    f'[bucketlist] Sended {len(left_bucks[li])} until the {li}th bucket.'
                 )
             with right_bucks[ri].lock:
                 res.extend(self._get_all_bucket_contacts(right_bucks, ri))
             if len(right_bucks[ri]):
-                self.logger.log(
-                    f'get_closest :: Sended {len(right_bucks[ri])} until the {index + ri + 1}th bucket.'
+                debug(
+                    f'[bucketlist] Sended {len(right_bucks[ri])} until the {index + ri + 1}th bucket.'
                 )
             li -= 1
             ri += 1
@@ -105,16 +104,16 @@ class BucketList:
             with left_bucks[li].lock:
                 res.extend(self._get_all_bucket_contacts(left_bucks, li))
             if len(left_bucks[li]):
-                self.logger.log(
-                    f'get_closest :: Sended {len(left_bucks[li])} until the {li}th bucket.'
+                debug(
+                    f'[bucketlist] Sended {len(left_bucks[li])} until the {li}th bucket.'
                 )
             li -= 1
         while ri < len(right_bucks):
             with right_bucks[ri].lock:
                 res.extend(self._get_all_bucket_contacts(right_bucks, ri))
             if len(right_bucks[ri]):
-                self.logger.log(
-                    f'get_closest :: Sended {len(right_bucks[ri])} until the {index + ri + 1}th bucket.'
+                debug(
+                    f'[bucketlist] Sended {len(right_bucks[ri])} until the {index + ri + 1}th bucket.'
                 )
             ri += 1
         return res

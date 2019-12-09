@@ -54,19 +54,20 @@ class KademliaProtocol(Service):
     def exposed_init(self, contact):
         if self.initialized:
             return True
+        
         self.contact = (
             contact if isinstance(contact, Contact) else Contact.from_json(contact)
         )
         self.bucket_list = BucketList(self.contact.id, k=self.k, b=self.b)
         self.initialized = True
         debug(
-            f'Node Initialized(id:{self.contact.id},k:{self.k},b:{self.b}'
+            f'Node Initialized(id:{self.contact.id},ip:{self.contact.ip}),k:{self.k},b:{self.b}'
         )
         return True
 
     def exposed_join_to_network(self, contact: str):
         debug(f'Recieved {contact}, to creatme.')
-        self.exposed_init(contact)
+        assert self.exposed_init(contact)
         contact = Contact.from_json(contact)
         while not self.started:
             try:
@@ -98,10 +99,12 @@ class KademliaProtocol(Service):
                                 error(f'Bad Response resul({resp}) from ({ip}:{port}).')
                                 raise Exception(f'connection fail.')
                         except Exception as e:
-                            error(f'Retrying to connect to ({ip}:{port}), Exception:\n{e}')
+                            error(f'Exception:\n{e}')
+                            debug(f'Retrying to connect to ({ip}:{port})')
                             count += 1
                     if count == 5:
                         debug(f'Connection not established with ({ip}:{port})')
+                        sleep(1)
                         continue
                     _any += 1
                     assert self.contact != contact
@@ -113,8 +116,7 @@ class KademliaProtocol(Service):
                     self.exposed_iter_find_node(self.contact.id)
                 except Exception as e:
                     raise Exception(f'Interrupted first exposed_iter_find_node because {e}.')
-                buck_len = len(self.bucket_list)
-                for i in range(buck_len):
+                for i in range(self.k):
                     if not self.bucket_list[i]:
                         continue
                     count = 0
@@ -132,7 +134,7 @@ class KademliaProtocol(Service):
                 error(f'NODE NOT JOINNED {e}')
                 debug(f'sleep a while for keep retrying')
                 sleep(0.3)  
-        return False
+        return True
              
     def exposed_ping(self, sender: Contact):
         if not self.initialized:
