@@ -66,7 +66,7 @@ class KBucket:
         return len(self) != 0
 
     def __str__(self):
-        return f'<BIT:{log2(self.low)},LEN={len(self)},CONTENT:{[self.contacts[1:] for i in self.contacts]}>'
+        return f'<BIT:{log2(self.low)},LEN={len(self)},CONTENT:{[list(i)[1:] for i in self.contacts]}>'
 
     __repr__ = __str__
 
