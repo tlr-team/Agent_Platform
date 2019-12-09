@@ -121,13 +121,12 @@ class AgentManager(KademliaProtocol):
             try:
                 debug(f'Trying to connect to service {self.service_name}')
                 c = connect(ip, port, config={'sync_request_timeout': 1000000})
-                debug(f'Pinging to ({ip}:{port})')
                 res = c.ping()
                 debug(f'Ping to ({ip}:{port}) res({res})')
-                res =  c.root.join_to_network(contact.to_json())
+                res = c.root.join_to_network(contact.to_json())
                 debug(f'\'join_to_network\' to ({ip}:{port}) res({res})')
                 if res:
-                break
+                    break
                 error('connection with himself has crashed')
             except Exception as e:
                 error(f'Could\'nt connect to service. Exception:\n{e}')

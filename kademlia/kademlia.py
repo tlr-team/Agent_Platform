@@ -134,7 +134,7 @@ class KademliaProtocol(Service):
                 error(f'NODE NOT JOINNED {e}')
                 debug(f'sleep a while for keep retrying')
                 sleep(0.3)  
-        return False
+        return True
              
     def exposed_ping(self, sender: Contact):
         if not self.initialized:

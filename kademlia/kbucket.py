@@ -2,6 +2,7 @@ from time import monotonic
 from collections import OrderedDict
 from .contact import Contact
 from threading import Lock
+from math import log2
 
 
 class KBucket:
@@ -65,7 +66,7 @@ class KBucket:
         return len(self) != 0
 
     def __str__(self):
-        return f'<[{self.low},{self.high}],len={len(self)}>'
+        return f'<BIT:{log2(self.low)},LEN={len(self)},CONTENT:{[self.contacts[1:] for i in self.contacts]}>'
 
     __repr__ = __str__
 
