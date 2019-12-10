@@ -123,10 +123,13 @@ class DbLeader(Leader_Election):
                 self.node_count += 1
                 if not id:
                     for key in self.database:
-                        for i in range(0,2):
-                            if self.database[key][i] == None:
-                                self.database[key] = self._build_tuple(key, i, ip)
-                                return (key, i)
+                        if self.database[key][0] == None:
+                            self.database[key] = self._build_tuple(key, 0, ip)
+                            return (key, 0)
+                    for key in self.database:
+                        if self.database[key][1] == None:
+                            self.database[key] = self._build_tuple(key, 1, ip)
+                            return (key, 1)
                     self.database[self.main_count] = (ip,None)
                     self.main_count += 1
                     return (self.main_count -1 , 0)
@@ -148,6 +151,7 @@ class DbLeader(Leader_Election):
                             if key == self.main_count -1 :
                                 self.main_count -= 1
                         return (key, i)
+            return None
 
     def _leget_backup(self):
         with self.dblock:
