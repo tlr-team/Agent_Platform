@@ -60,7 +60,7 @@ class LESDB(DbLeader, SharedDataBase):
                 with self.deadlock:
                     while(len(self.deadlist)):
                         ip = self.deadlist.pop()
-                        id, index = self._ledelete(ip)
+                        _, index = self._ledelete(ip)
                         if index == 0:
                             self._get_help()
                         self.logger.debug(f'Deleted {ip}')
