@@ -45,6 +45,13 @@ class LESDB(DbLeader, SharedDataBase):
                                 self.logger.debug(f" database {self.database}")
             sleep(time)
 
+    def _get_help(self):
+        val = self._leget_backup()
+        if val:
+            Tcp_Message({'RESET':''}, val[1], self.dbport, Void)
+            self._ledelete(val[1])
+        pass
+
     def _remove_dead(self, time):
         while(True):
             if not self.im_leader:
@@ -53,14 +60,16 @@ class LESDB(DbLeader, SharedDataBase):
                 with self.deadlock:
                     while(len(self.deadlist)):
                         ip = self.deadlist.pop()
-                        self._ledelete(ip)
+                        id, index = self._ledelete(ip)
+                        if index == 0:
+                            self._get_help()
                         self.logger.debug(f'Deleted {ip}')
             sleep(time)
 
     def _world_serve(self):
         self.logger.info(f'World Server Initiated at {self.world_port}')
         ServerTcp(self.ip,self.world_port,self._world_attend,self.logger,lambda x: not x.im_leader,self)
-
+    
     def _world_attend(self, sock, addr):
         message = Tcp_Sock_Reader(sock)
         self.logger.debug(f'Recieved {message} from {addr}')
