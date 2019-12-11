@@ -10,60 +10,9 @@ from time import sleep
 from ..utils.network import Tcp_Message
 from threading import Thread
 
-class LDatabase:
-    def __init__(self):
-        self.dblock = Lock()
-        self.database = {}
-        self.main_count = 0
-        self.node_count = 0
-        self.is_full = True
-
-    def insert(self, ip, id = None):
-        with self.dblock:
-            self.node_count += 1
-            if not id:
-                for key in self.database:
-                    for i in range(0,2):
-                        if self.database[key][i] == None:
-                            self.database[key][i] = ip
-                            return (key, i)
-                self.database[self.main_count] = (ip,None)
-                self.main_count += 1
-                return (self.main_count -1 , 0)
-            else:
-                for i in range(0,2):
-                    if self.database[id][i] == None:
-                        self.database[id][i] = ip
-                        return (key, i)
-
-    def delete(self, ip):
-        with self.dblock:
-            self.node_count -= 1
-            for key in self.database:
-                for i in range(0,2):
-                    if self.database[key][i] == ip:
-                        self.database[key][i] = None
-                        if self.database[key] == (None,None):
-                            del self.database[key]
-                            if key == self.main_count -1 :
-                                self.main_count -= 1
-                        return (key, i)
-
-    def get_backup(self):
-        with self.dblock:
-            for key in self.database:
-                if self.database[key][1] != None:
-                    return (key, self.database[key][1])
-            return None
-
-    def __getitem__(self, value):
-        return self.database[value]
-
-
-
 class DbLeader(Leader_Election):
-    def __init__(self, ip, mask, leport, logger = getLogger()):
-        Leader_Election.__init__(self,ip,mask,leport, logger)
+    def __init__(self, ip, mask, leport, logger = getLogger(), pt=10, rt=20, ttl=4):
+        Leader_Election.__init__(self,ip,mask,leport, logger, pt, rt, ttl)
         self.database = {}
         self.freelist = []
         self.deadlist = []
@@ -122,14 +71,11 @@ class DbLeader(Leader_Election):
             with self.dblock:
                 self.node_count += 1
                 if not id:
-                    for key in self.database:
-                        if self.database[key][0] == None:
-                            self.database[key] = self._build_tuple(key, 0, ip)
-                            return (key, 0)
-                    for key in self.database:
-                        if self.database[key][1] == None:
-                            self.database[key] = self._build_tuple(key, 1, ip)
-                            return (key, 1)
+                    for i in [0,1]:
+                        for key in self.database:
+                            if self.database[key][i] == None:
+                                self.database[key] = self._build_tuple(key, i, ip)
+                                return (key, i)
                     self.database[self.main_count] = (ip,None)
                     self.main_count += 1
                     return (self.main_count -1 , 0)
