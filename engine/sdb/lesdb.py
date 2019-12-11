@@ -29,7 +29,7 @@ class LESDB(DbLeader, SharedDataBase):
                         ip = self.freelist.pop()
                         if ip != self.ip and not self._exist(ip):
                             info = Tcp_Message({'INFO':''},ip,self.dbport)
-                            if info:
+                            if info != None:
                                 self.logger.debug(f'recieved info {info} from {ip}')
                                 val, backup = self._is_useful_info(info, ip)
                                 if not val:
@@ -49,12 +49,13 @@ class LESDB(DbLeader, SharedDataBase):
     
     def _is_useful_info(self, info, ip):
         ID = info['INFO_ACK']
-        with self.dblock:
-            for i in [0,1]:
-                if not self.database[ID][i]:
-                    self.database[ID] = self._build_tuple(ID, i, ip)
-                    self.logger.debug(f'REUSED INFO { info } from {ip}')
-                    return (True, i)
+        if info >= 0:
+            with self.dblock:
+                for i in [0,1]:
+                    if not self.database[ID][i]:
+                        self.database[ID] = self._build_tuple(ID, i, ip)
+                        self.logger.debug(f'REUSED INFO { info } from {ip}')
+                        return (True, i)
         return (False, 0)
         
     def _get_help(self):
