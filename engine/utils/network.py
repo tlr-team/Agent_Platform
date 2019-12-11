@@ -167,6 +167,9 @@ def Udp_Message(msg, ip, port, function=Void):
 def Udp_Response(socket):
     return Decode_Response(socket.recvfrom(2048)[0])
 
+def Udp_Full_Response(socket):
+    return Decode_Response(socket.recvfrom(1024))
+
 def ServerTcp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto = None, lock = None):
     logger.info(f"Server TCP initiated at {ip,port}")
     with socket(type=SOCK_STREAM) as sock:
@@ -195,6 +198,16 @@ def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=No
             Thread(target=client_fucntion,args=(msg,addr),daemon=True).start()
 
 
-# FIXME aplicar hilos para concurrencia y un lock
+def WhoCanServeMe(broadcast_addr, port, data_container, lock):
+    while(True):
+        answer = Send_Broadcast_Message({'WHOCANSERVEME':''}, broadcast_addr, port, Udp_Full_Response)
+        if answer != '':
+            with lock:
+                data_container.append(answer[1][0])
+        sleep(5)
 
-# Clase para el algoritmo de descubrimiento
+def WhoCanServeMe_Server(port, client_fucntion, logger, stop_condition=False, objeto=None):
+    ServerUdp('',port, client_fucntion, logger , stop_condition, objeto)
+
+def WhoCanServeMe_client(msg, addr):
+    Udp_Message({'ME':''}, addr[0], addr[1])
