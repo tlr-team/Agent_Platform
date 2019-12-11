@@ -31,10 +31,12 @@ class LESDB(DbLeader, SharedDataBase):
                             info = Tcp_Message({'INFO':''},ip,self.dbport)
                             if info:
                                 self.logger.debug(f'recieved info {info} from {ip}')
-                                id, backup = self._leinsert(ip)
-                                self.logger.debug(f'id and backup to {ip}: {id, backup}')
-                                Tcp_Message({'ID':id}, ip, self.dbport, Void)
-                                self.logger.debug(f" database {self.database}")
+                                val, backup = self._is_useful_info(info, ip)
+                                if not val:
+                                    id, backup = self._leinsert(ip)
+                                    self.logger.debug(f'id and backup to {ip}: {id, backup}')
+                                    Tcp_Message({'ID':id}, ip, self.dbport, Void)
+                                    self.logger.debug(f" database {self.database}")
                                 if backup:
                                     with self.dblock:
                                         set_backup = self.database[id][0]
@@ -51,14 +53,18 @@ class LESDB(DbLeader, SharedDataBase):
             for i in [0,1]:
                 if not self.database[ID][i]:
                     self.database[ID] = self._build_tuple(ID, i, ip)
-                    break
-
+                    self.logger.debug(f'REUSED INFO { info } from {ip}')
+                    return (True, i)
+        return (False, 0)
+        
     def _get_help(self):
         val = self._leget_backup()
         if val:
             Tcp_Message({'RESET':''}, val[1], self.dbport, Void)
             self._ledelete(val[1])
-        pass
+            self.logger.debug(f'BACKUP AVIABLE FOUND FOR RESCUE')
+        else:
+            self.logger.debug(f'NO BACKUP AVIABLE FOR RESCUE')
 
     def _remove_dead(self, time):
         while(True):

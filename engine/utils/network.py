@@ -149,7 +149,7 @@ def Tcp_Message(msg,ip,port, function = Tcp_Sock_Reader):
             tmp = Encode_Request(msg)
             sock.send(tmp)
             response = function(sock)
-        except:
+        except Exception as e:
             return None
     return response
 
