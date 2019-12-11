@@ -25,12 +25,13 @@ def Void(time):
     pass
 
 class Discovering:
-    def __init__(self, port, broadcast_addr, logger, time=10, ttl = 10):
+    def __init__(self, port, broadcast_addr, logger, publish_time=10, refresh_time=20 ,ttl = 4):
         self.partners = {}
         self.port = port
         self.b_addr = broadcast_addr
         self.mutex = Semaphore()
-        self.time = time
+        self.publish_time = publish_time
+        self.refresh_time = refresh_time
         self.ttl = ttl
         self.disclogger = logger
 
@@ -56,7 +57,7 @@ class Discovering:
         self.disclogger.info(f'Discover write Daemon initiated')
         while True:
             Send_Broadcast_Message("Hello", self.b_addr, self.port)
-            sleep(self.time)
+            sleep(self.publish_time)
 
     #Hilo que va a refrescar el estado de la tabla
     def _refresh(self):
@@ -71,11 +72,11 @@ class Discovering:
                         self.disclogger.debug(f'TTL EXPIRED {name}')
                 self.partners = temp
                 #self.disclogger.debug(f'partnerts :{temp}')
-            sleep(2*self.time)
+            sleep(self.refresh_time)
 
 class Leader_Election(Discovering):
-    def __init__(self, ip, mask, port, logger = getLogger()):
-        Discovering.__init__(self, port, Get_Broadcast_Ip(ip,mask), logger,3,8)
+    def __init__(self, ip, mask, port, logger = getLogger(), pt = 10, rt=20, ttl=4):
+        Discovering.__init__(self, port, Get_Broadcast_Ip(ip,mask), logger,pt, rt, ttl)
         self.mask = mask
         self.ip = ip
         self.leader_dhared_memory = Value('i',0)
@@ -89,7 +90,7 @@ class Leader_Election(Discovering):
         Thread(target=self._check_leader,daemon = True, name='Leader Election Daemon').start()
         Thread(target=self._serve,daemon=True,name='DiscoverServer').start()
 
-    def _check_leader(self, time = 10):
+    def _check_leader(self, time = 30):
         self.lelogger.info(f'Leader Election: Check Leader Daemon Initiated')
         while(True):
             ips = self.Get_Partners()

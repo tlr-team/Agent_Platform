@@ -13,9 +13,9 @@ from multiprocessing import Lock, Process, Value
 
 
 class LESDB(DbLeader, SharedDataBase):
-    def __init__(self, ip, mask, dbport, leport, world_port, logger=getLogger()):
+    def __init__(self, ip, mask, dbport, leport, world_port, logger=getLogger(), pt=10, rt=20, ttl=4):
         SharedDataBase.__init__(self, ip, mask, dbport, logger)
-        DbLeader.__init__(self, ip, mask , leport, logger)
+        DbLeader.__init__(self, ip, mask , leport, logger, pt , rt , ttl )
         self.world_port = world_port
         self.logger = logger
 
@@ -139,7 +139,7 @@ def Worker_Process(ip, port, function, shared_memory_func, shared_memory, lock):
     Thread(target=ServerTcp,args=(ip, port, function, logger, shared_memory_func, shared_memory, lock),daemon=True, name='Server').start()
     while(True):
         if shared_memory_func(shared_memory, lock):
-            logger.debug(f'Im not worker animore')
+            logger.debug(f'Worker Job Ended')
             exit()
         #logger.warning(f'valor de la memoria compartida, {shared_memory.value}')
         sleep(1)
