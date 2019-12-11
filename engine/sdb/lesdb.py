@@ -44,6 +44,14 @@ class LESDB(DbLeader, SharedDataBase):
                                     self.logger.debug(f'Sended TO_BACKUP to {ip}')
                                 self.logger.debug(f" database {self.database}")
             sleep(time)
+    
+    def _is_useful_info(self, info, ip):
+        ID = info['INFO_ACK']
+        with self.dblock:
+            for i in [0,1]:
+                if not self.database[ID][i]:
+                    self.database[ID] = self._build_tuple(ID, i, ip)
+                    break
 
     def _get_help(self):
         val = self._leget_backup()
