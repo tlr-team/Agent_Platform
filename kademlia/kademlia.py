@@ -460,16 +460,12 @@ class KademliaProtocol(Service):
 
     def connect_to(self, contact):
         debug(f'trying to connect to {contact}.')
-        count = 0 
-        while count < 3:
-            count += 1
-            try:
-                connection = connect(contact.ip, contact.port, {'timeout':1})
-                debug(f'Doing ping to:{contact}')
-                connection.ping()
-            except Exception as e:
-                error(e)
-                debug(f'Retrying to connect to:{contact} count:{count}.')
+        try:
+            connection = connect(contact.ip, contact.port, config={'timeout':1})
+            debug(f'Doing ping to:{contact}')
+            connection.ping()
+        except Exception as e:
+            error(e)
         debug(f'Connected to contact:{contact}')
         return connection
 
