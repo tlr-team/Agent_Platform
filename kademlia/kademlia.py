@@ -485,7 +485,7 @@ class KademliaProtocol(Service):
     @retry(1, 1, message='do_find_node(retry) :: Fail to connect')
     def do_find_node(self, to_reciever: Contact, key):
         if to_reciever == self.contact:
-            return self.contact
+            return []
 
         con = self.connect_to(to_reciever)
         result = con.root.find_node(self.contact.to_json(), int(key))
