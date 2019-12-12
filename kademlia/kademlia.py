@@ -155,8 +155,9 @@ class KademliaProtocol(Service):
             error(f'Node not initialized.')
             return False
         debug(f'Requested by {sender}.')
-        sender = Contact.from_json(sender)
-        self.update_contacts(sender)
+        if sender:
+            sender = Contact.from_json(sender)
+            self.update_contacts(sender)
         try:
             self.db_lock.acquire()
             stored_value, time = self.db[key]
@@ -165,7 +166,9 @@ class KademliaProtocol(Service):
         self.db[key] = (
             (value, store_time) if time < store_time else (stored_value, time)
         )
-        self.export(key, val_time_tupl)
+        debug(f'Store at this node: ({key},{value}) at time {store_time}.')
+        self.export(key, (value, store_time))
+        debug(f'Stored at this node: ({key},{value}) at time {store_time}.')
         self.db_lock.release()
         # debug(f'Finish with {sender}.')
         return True
@@ -320,6 +323,7 @@ class KademliaProtocol(Service):
         value, time = most_recent_value
         if value is None:
             return None
+        debug(f'Storing {key}:({value},{time}) kclosest contacts .')
         for cont in kclosest:
             debug(
                 f'Storing {key},({most_recent_value}) in Contact:{cont}.'
@@ -397,16 +401,18 @@ class KademliaProtocol(Service):
             debug('Empty queue.')
             return
         debug(f'do_find_node to contact:{contact}.')
-        success, contacts = self.do_find_node(contact, key)
+        success, contacts = self.do_find_node(contact.to_json(), key)
         if not success:
             debug(f'Unable to connect to {contact}.')
             return
         debug(f'Connected to {contact}.')
         self.update_contacts(contact)
         contacts = map(Contact.from_json, contacts)
+        debug(f'Peers to search: {list(contacts)}.')
         for contact_finded in contacts:
             if contact_finded == self.contact:
                 continue
+            debug(f'Pinging to {contact_finded}.')
             if not self.do_ping(contact_finded)[0]:
                 debug(
                     f'Unable to connect to {contact_finded}.'
@@ -480,6 +486,7 @@ class KademliaProtocol(Service):
             return None
         debug(f'Node not initialized.')
         con = self.connect_to(to_reciever)
+        debug(f'Trying to ping to contact:{to_reciever}')
         result = con.root.ping(self.contact.to_json())
         con.close()
         return result
@@ -487,9 +494,10 @@ class KademliaProtocol(Service):
     @retry(1, 1, message='do_store(retry) :: Fail to connect')
     def do_store_value(self, to_reciever: Contact, key, value, store_time):
         if to_reciever == self.contact:
-            return None
+            return self.exposed_store(None, int(key), str(value), store_time)
 
         con = self.connect_to(to_reciever)
+        debug(f'Trying to store to contact:{to_reciever}')
         result = con.root.store(
             self.contact.to_json(), int(key), str(value), store_time
         )
@@ -502,6 +510,7 @@ class KademliaProtocol(Service):
             return []
 
         con = self.connect_to(to_reciever)
+        debug(f'Trying to find node to contact:{to_reciever}')
         result = con.root.find_node(self.contact.to_json(), int(key))
         con.close()
         return result
@@ -512,6 +521,7 @@ class KademliaProtocol(Service):
             return None
 
         con = self.connect_to(to_reciever)
+        debug(f'Trying to find value to contact:{to_reciever}')
         result = con.root.find_value(self.contact.to_json(), int(key))
         con.close()
         return result
@@ -524,7 +534,7 @@ class KademliaProtocol(Service):
         if not self.bucket_list.add_contact(contact):
             # bucket full
             with self.bucket_list.buckets_lock:
-                bucket = self.bucket_list._get_bucket(contact.id)
+                bucket = self.bucket_list.get_bucket(contact.id)
             bucket.lock.acquire()
             for cont in bucket:
                 if not self.do_ping(cont):

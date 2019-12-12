@@ -59,7 +59,11 @@ class BucketList:
         debug(f'[bucketlist] key:{key}.')
         distance = key ^ self.id
         debug(f'[bucketlist] Distance:{distance} = key:{key} ^ id:{self.id}.')
-        i = [i for i in range(self.b) if self.buckets[i].hasinrange(distance)].pop()
+        i = [
+            i
+            for i in range(self.b)
+            if self.buckets[i].hasinrange(distance + 1 if not distance else distance)
+        ].pop()
         debug(f'[bucketlist] Index:{i}, str(distance)={to_str(distance)}.')
         return i
 
