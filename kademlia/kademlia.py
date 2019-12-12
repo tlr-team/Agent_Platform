@@ -10,6 +10,7 @@ from engine.utils.network import retry
 from queue import Queue, Empty
 from random import randint
 from time import sleep
+from json import dump
 from socket import (
     socket,
     SOCK_DGRAM,
@@ -164,6 +165,7 @@ class KademliaProtocol(Service):
         self.db[key] = (
             (value, store_time) if time < store_time else (stored_value, time)
         )
+        self.export(key, val_time_tupl)
         self.db_lock.release()
         # debug(f'Finish with {sender}.')
         return True
@@ -460,6 +462,10 @@ class KademliaProtocol(Service):
         connection.ping()
         debug(f'Added Contact:{contact}')
         return connection
+
+    def export(self, key, val_time_tupl):
+        with open(f'log/data_{key}.txt', 'w') as f:
+            dump({key: val_time_tupl}, f, indent=True)
 
     # region Do functions
     @retry(1, 1, message='do_ping(retry) :: Fail to connect')
