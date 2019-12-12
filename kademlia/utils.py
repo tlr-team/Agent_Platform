@@ -34,6 +34,7 @@ class KSortedQueue:
 
     def add(self, node):
         self.lock.acquire()
+        print(f'{list(self.queue)}.Add({node})')
         for i, cur_node in enumerate(self.queue):
             if node.id ^ self.mid < cur_node.id ^ self.mid:
                 self.queue.insert(i, node)
@@ -48,7 +49,7 @@ class KSortedQueue:
     def __iter__(self):
         self.lock.acquire()
         for node in self.queue:
-            yield node.value
+            yield node
         self.lock.release()
 
 
