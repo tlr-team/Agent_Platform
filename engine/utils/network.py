@@ -24,7 +24,6 @@ def get_hash(addr=None, ip='', port=''):
 # decorador que reintenta una función si esta da error cada seconds cantidad de tiempo
 def retry(time_to_sleep, times=1, message='No es posible conectar, reintentando'):
     def FReciever(function):
-        @wraps
         def wrapper(*args, **kwargs):
             count = 0
             while times > count:
@@ -141,11 +140,12 @@ def Tcp_Sock_Reader(sock):
             result = Decode_Response(buf.getvalue())
     return result
 
-#Envia un mensaje tcp y devuelve la respuesta
-def Tcp_Message(msg,ip,port, function = Tcp_Sock_Reader):
-    with socket(type= SOCK_STREAM) as sock:
+
+# Envia un mensaje tcp y devuelve la respuesta
+def Tcp_Message(msg, ip, port, function=Tcp_Sock_Reader):
+    with socket(type=SOCK_STREAM) as sock:
         try:
-            sock.connect((ip,port))
+            sock.connect((ip, port))
             tmp = Encode_Request(msg)
             sock.send(tmp)
             response = function(sock)
@@ -167,20 +167,26 @@ def Udp_Message(msg, ip, port, function=Void):
 def Udp_Response(socket):
     return Decode_Response(socket.recvfrom(2048)[0])
 
+
 def Udp_Full_Response(socket):
     return Decode_Response(socket.recvfrom(1024))
 
-def ServerTcp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto = None, lock = None):
+
+def ServerTcp(
+    ip, port, client_fucntion, logger, Stop_Condition=False, objeto=None, lock=None
+):
     logger.info(f"Server TCP initiated at {ip,port}")
     with socket(type=SOCK_STREAM) as sock:
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
         sock.bind((ip, port))
         sock.listen(10)
-        while(True):
-            if objeto and (Stop_Condition(objeto) if not lock else Stop_Condition(objeto,lock)):
+        while True:
+            if objeto and (
+                Stop_Condition(objeto) if not lock else Stop_Condition(objeto, lock)
+            ):
                 logger.info("NO server anymore")
                 break
-            #print("Condicion TCP: ", Stop_Condition(objeto) if objeto != None else None)
+            # print("Condicion TCP: ", Stop_Condition(objeto) if objeto != None else None)
             client, addr = sock.accept()
             logger.debug(f'Recieved TCP Connection from {addr}')
             Thread(target=client_fucntion, args=(client, addr), daemon=True).start()
@@ -194,20 +200,27 @@ def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=No
             if objeto and Stop_Condition(objeto):
                 break
             msg, addr = sock.recvfrom(1024)
-            #logger.debug(f'Recieved UDP Connection from {addr}')
-            Thread(target=client_fucntion,args=(msg,addr),daemon=True).start()
+            # logger.debug(f'Recieved UDP Connection from {addr}')
+            Thread(target=client_fucntion, args=(msg, addr), daemon=True).start()
 
 
 def WhoCanServeMe(broadcast_addr, port, data_container, lock):
-    while(True):
-        answer = Send_Broadcast_Message({'WHOCANSERVEME':''}, broadcast_addr, port, Udp_Full_Response)
+    while True:
+        answer = Send_Broadcast_Message(
+            {'WHOCANSERVEME': ''}, broadcast_addr, port, Udp_Full_Response
+        )
         if answer != '':
             with lock:
                 data_container.append(answer[1][0])
         sleep(5)
 
-def WhoCanServeMe_Server(port, client_fucntion, logger, stop_condition=False, objeto=None):
-    ServerUdp('',port, client_fucntion, logger , stop_condition, objeto)
+
+def WhoCanServeMe_Server(
+    port, client_fucntion, logger, stop_condition=False, objeto=None
+):
+    ServerUdp('', port, client_fucntion, logger, stop_condition, objeto)
+
 
 def WhoCanServeMe_client(msg, addr):
-    Udp_Message({'ME':''}, addr[0], addr[1])
+    Udp_Message({'ME': ''}, addr[0], addr[1])
+

@@ -261,7 +261,7 @@ class KademliaProtocol(Service):
             kclosest.add(contact)
             if queue.qsize() >= self.a:
                 debug(
-                    f'Alpha:{queue.qsize()} contacts to look for.'
+                    f'Alpha:{self.a} contacts to look for.'
                 )
                 break
         container = ThreadRunner(
@@ -326,6 +326,7 @@ class KademliaProtocol(Service):
                 debug(
                     f'Success stored in {contact}'
                 )
+        return value,time
     # endregion    
     def find_value_lookup(
         self,
@@ -484,7 +485,7 @@ class KademliaProtocol(Service):
     @retry(1, 1, message='do_find_node(retry) :: Fail to connect')
     def do_find_node(self, to_reciever: Contact, key):
         if to_reciever == self.contact:
-            return None
+            return self.contact
 
         con = self.connect_to(to_reciever)
         result = con.root.find_node(self.contact.to_json(), int(key))

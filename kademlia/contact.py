@@ -29,7 +29,7 @@ class Contact:
         return Contact(_dict['ip'], _dict['port'], _dict['id'])
 
     def __str__(self):
-        return f'<{self.id},{self.ip}:{self.port}>'
+        return f'<{self.ip}:{self.port},{self.id}>'
 
     __repr__ = __str__
 
@@ -44,3 +44,6 @@ class Contact:
 
     def __iter__(self):
         yield from (self.id, self.ip, self.port)
+
+    def __hash__(self):
+        return hash(self.id)
