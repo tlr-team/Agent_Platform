@@ -401,6 +401,7 @@ class KademliaProtocol(Service):
         if not success:
             debug(f'Unable to connect to {contact}.')
             return
+        debug(f'Connected to {contact}.')
         self.update_contacts(contact)
         contacts = map(Contact.from_json, contacts)
         for contact_finded in contacts:
@@ -435,6 +436,7 @@ class KademliaProtocol(Service):
         if not success:
             debug(f'Unable to connect to {contact}.')
             return
+        debug(f'Connected to {contact}.')
         self.update_contacts(contact)
         contacts = map(Contact.from_json, contacts)
         for contact_finded in contacts:
@@ -475,6 +477,7 @@ class KademliaProtocol(Service):
         debug(f'Node not initialized.')
         con = self.connect_to(to_reciever)
         result = con.root.ping(self.contact.to_json())
+        con.close()
         return result
 
     @retry(1, 1, message='do_store(retry) :: Fail to connect')
@@ -486,6 +489,7 @@ class KademliaProtocol(Service):
         result = con.root.store(
             self.contact.to_json(), int(key), str(value), store_time
         )
+        con.close()
         return result
 
     @retry(1, 1, message='do_find_node(retry) :: Fail to connect')
@@ -495,6 +499,7 @@ class KademliaProtocol(Service):
 
         con = self.connect_to(to_reciever)
         result = con.root.find_node(self.contact.to_json(), int(key))
+        con.close()
         return result
 
     @retry(1, 1, message='do_find_value(retry) :: Fail to connect')
@@ -504,6 +509,7 @@ class KademliaProtocol(Service):
 
         con = self.connect_to(to_reciever)
         result = con.root.find_value(self.contact.to_json(), int(key))
+        con.close()
         return result
     # endregion
 
