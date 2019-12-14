@@ -32,8 +32,9 @@ class DbLeader(Leader_Election):
             if not self.im_leader:
                 break
             lista = self.Get_Partners()
+            self.lelogger.debug(f'Partners {lista}')
             self._check_newones(lista)
-            self.lelogger.debug(f' deadones checker initated')
+            #self.lelogger.debug(f' deadones checker initated')
             self._check_deadones(lista)            
             sleep(time)
 
@@ -46,11 +47,11 @@ class DbLeader(Leader_Election):
                     break
                 for k in range(0,2): 
                     if i == self.database[key][k]:
-                        self.lelogger.debug(f'IP already in database {i}')
+                        #self.lelogger.debug(f'IP already in database {i}')
                         present = True
                         break                    
             if not present:
-                if not i in self.freelist:
+                if not i in self.freelist and i != self.ip:
                     self.dbleaderlogger.debug(f' IP FOUND {i}')
                     with self.freelock:
                         self.freelist.append(i)
@@ -59,8 +60,8 @@ class DbLeader(Leader_Election):
     def _check_deadones(self, lista):
         for _,val in self.database.items():
             for j in range(0,2):
-                if val[j] and val[j] not in lista:
-                    with self.deadlock:
+                with self.deadlock:
+                    if val[j] and val[j] not in lista and val[j] not in self.deadlist:
                         self.dbleaderlogger.debug(f'IP LOST {val[j]}')
                         self.deadlist.append(val[j])
 

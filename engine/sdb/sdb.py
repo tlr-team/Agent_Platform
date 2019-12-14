@@ -21,48 +21,53 @@ class SharedDataBase(SimpleDataBase):
         self.to_backup = ""
         self.id = -1
 
-    def _process_request(self, sock, addr):
-        if not self.im_backup or self.to_backup == addr[0]:
-            request = Tcp_Sock_Reader(sock)
+    def _process_request(self, sock, addr):    
+        request = Tcp_Sock_Reader(sock)
 
-            self.sdblogger.debug(f'Recieved {request} from {addr}')
+        self.sdblogger.debug(f'Recieved {request} from {addr}')
 
-            if 'get' in request:
-                if request['get'] == 'list':
-                    full_list = Encode_Request([ a for a in self.dbs])
-                    sock.send(full_list)
+        if 'get' in request:
+            if request['get'] == 'list':
+                full_list = Encode_Request([ a for a in self.dbs])
+                sock.send(full_list)
 
-                    self.sdblogger.debug(f'Full Service List {full_list} Sent to {addr}')
+                self.sdblogger.debug(f'Full Service List {full_list} Sent to {addr}')
 
-                else:
-                    message = self._get(request['get'])
-                    self.sdblogger.debug(f'Database {self.dbs} AFTER GET')
-                    sock.send(Encode_Request(message))
+            else:
+                message = self._get(request['get'])
+                self.sdblogger.debug(f'Database {self.dbs} AFTER GET')
+                sock.send(Encode_Request(message))
 
-                    self.sdblogger.debug(f'Sent {message} to {addr}')
-            elif 'post' in request:
-                if(self.backup != ''):
-                    
-                    self.sdblogger.debug(f'Backup Update Sent to {self.backup}')
+                self.sdblogger.debug(f'Sent {message} to {addr}')
+        elif 'post' in request:
+            if(self.backup != ''):
+                
+                self.sdblogger.debug(f'Backup Update Sent to {self.backup}')
 
-                    Tcp_Message(request, self.backup, self.dbport, Void)
-                self._insert(request['post'],{ 'ip':request['ip'],'port':request['port'],'url':request['url'], 'protocol':request['protocol']})
-                self.sdblogger.debug(f'Database {self.dbs} AFTER POST')
+                Tcp_Message(request, self.backup, self.dbport, Void)
+            self._insert(request['post'],{ 'ip':request['ip'],'port':request['port'],'url':request['url'], 'protocol':request['protocol']})
+            self.sdblogger.debug(f'Database {self.dbs} AFTER POST')
 
-            elif 'ID' in request:
-                self.id = request['ID']
+        elif 'ID' in request:
+            self.id = request['ID']
 
-            elif 'INFO' in request:
-                sock.send(Encode_Request({"INFO_ACK":self.id}))
+        elif 'INFO' in request:
+            sock.send(Encode_Request({"INFO_ACK":self.id}))
 
-            elif 'SET_BACKUP' in request:
-                self.im_backup = False
-                self.backup = request['SET_BACKUP']
-                self.to_backup = ""
+        elif 'SET_BACKUP' in request:
+            self.im_backup = False
+            self.backup = request['SET_BACKUP']
+            self.to_backup = ""
 
-            elif 'TO_BACKUP' in request:
-                self.im_backup = True
-                self.to_backup = request['TO_BACKUP']
-                self.backup = ""
+        elif 'TO_BACKUP' in request:
+            self.im_backup = True
+            self.to_backup = request['TO_BACKUP']
+            self.backup = ""
+
+        elif 'RESET' in request:
+            self.backup = ""
+            self.im_backup = False
+            self.to_backup = ""
+            self.id = -1
         sock.close()
 

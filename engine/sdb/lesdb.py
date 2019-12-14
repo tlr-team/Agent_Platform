@@ -48,8 +48,8 @@ class LESDB(DbLeader, SharedDataBase):
                                     Tcp_Message({'TO_BACKUP':set_backup},ip,self.dbport, Void)
                                     self.logger.debug(f'Sended TO_BACKUP to {ip}')
                                 self.logger.debug(f" database {self.database}")
-            else:
-                self.logger.debug(f'NO IP FOUND FOR JOB')
+            #else:
+                #self.logger.debug(f'NO IP FOUND FOR JOB')
             sleep(time)
     
     def _is_useful_info(self, info, ip):
@@ -63,20 +63,33 @@ class LESDB(DbLeader, SharedDataBase):
                         return (True, i)
         return (False, 0)
         
-    def _get_help(self):
-        val = self._leget_backup()
-        if val:
-            Tcp_Message({'RESET':''}, val[1], self.dbport, Void)
-            self._ledelete(val[1])
-            self.logger.debug(f'BACKUP AVIABLE FOUND FOR RESCUE')
+    def _get_help(self, ID):
+        self.logger.debug(f'ID at get_help {ID}')
+        if ID in self.database and self.database[ID][1] != None:
+            newip = self.database[ID][1]
+            self.dblogger.debug(f'{newip} found for job at {ID}')
+            Tcp_Message({'SET_BACKUP':''}, newip, self.dbport, Void)
+            self.logger.debug(f'Sended SET_BACKUP to {newip}')
+            with self.dblock:
+                a, b = self.database[ID]
+                self.database[ID] = (b,a)
+            self.dblogger.debug(f'database {self.database}')
         else:
-            self.logger.debug(f'NO BACKUP AVIABLE FOR RESCUE')
+            val = self._leget_backup()
+            if val:
+                self.logger.debug(f'BACKUP AVIABLE FOUND FOR RESCUE')
+                Tcp_Message({'RESET':''}, val[1], self.dbport, Void)
+                #self.logger.debug(f'SENDED RESET FLAG TO {val[1]}')
+                self._ledelete(val[1])
+                self.logger.debug(f'database {self.database} after _ledelte{val[1]}')    
+            else:
+                self.logger.debug(f'NO BACKUP AVIABLE FOR RESCUE')
 
     def _remove_dead(self, time):
         while(True):
             if not self.im_leader:
                 break
-            if len(self.freelist):
+            if len(self.deadlist):
                 with self.deadlock:
                     while(len(self.deadlist)):
                         ip = self.deadlist.pop()
@@ -84,7 +97,7 @@ class LESDB(DbLeader, SharedDataBase):
                         if val:
                             index = val[1]
                             if index == 0:
-                                self._get_help()
+                                self._get_help(index)
                             self.logger.debug(f'Deleted {ip}')
                         else:
                             self.logger.debug(f'{ip} not found for delete')

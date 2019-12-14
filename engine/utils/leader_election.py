@@ -49,7 +49,7 @@ class Discovering:
     def _listen(self, msg ,ip):
             with self.mutex:
                 self.partners[ip[0]] = self.ttl
-                self.disclogger.debug(f'TTL restablished for {ip[0]}')
+                #self.disclogger.debug(f'TTL restablished for {ip[0]}')
 
     # Hilo que va a enviar cada cierto tiempo definido un mensaje broadcast para decir que esta vivo
     def _write(self):
@@ -67,10 +67,10 @@ class Discovering:
                 for name, val in self.partners.items():
                     if val > 1:
                         temp[name] = val - 1
-                    else:
-                        self.disclogger.debug(f'TTL EXPIRED {name}')
+                    #else:
+                        #self.disclogger.debug(f'TTL EXPIRED {name}')
                 self.partners = temp
-                #self.disclogger.debug(f'partnerts :{temp}')
+                self.disclogger.debug(f'partnerts :{temp}')
             sleep(self.refresh_time)
 
 class Leader_Election(Discovering):

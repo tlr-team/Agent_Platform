@@ -149,6 +149,7 @@ def Tcp_Message(msg,ip,port, function = Tcp_Sock_Reader):
             tmp = Encode_Request(msg)
             sock.send(tmp)
             response = function(sock)
+            print("SENDED SUSCESSFULLY")
         except Exception as e:
             return None
     return response
@@ -194,7 +195,7 @@ def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=No
             if objeto and Stop_Condition(objeto):
                 break
             msg, addr = sock.recvfrom(1024)
-            logger.debug(f'Recieved UDP Connection from {addr} to {port}')
+            #logger.debug(f'Recieved UDP Connection from {addr} to {port}')
             if Thread_Serve:
                 Thread(target=client_fucntion,args=(msg,addr),daemon=True).start()
             else:
