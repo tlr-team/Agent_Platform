@@ -41,17 +41,17 @@ class DbLeader(Leader_Election):
     def _check_newones(self, lista):
         for i in lista:
             present = False
-            for j in range(0,len(self.database.keys()) - 1):
+            for key in self.database:
                 if present:
                     break
-                for k in range(0,2):
-                    if i == self.database[j][k]:
-                        self.lelogger.debug(f'{i} present at [{j}][{k}] in {self.database}')
+                for k in range(0,2): 
+                    if i == self.database[key][k]:
+                        self.lelogger.debug(f'IP already in database {i}')
                         present = True
-                        break
+                        break                    
             if not present:
                 if not i in self.freelist:
-                    self.dbleaderlogger.debug(f' new ip found {i}')
+                    self.dbleaderlogger.debug(f' IP FOUND {i}')
                     with self.freelock:
                         self.freelist.append(i)
                 self.node_count += 1
@@ -108,8 +108,11 @@ class DbLeader(Leader_Election):
             return None
 
     def _build_tuple(self, key, i, val):
-        other = self.database[key][(i-1)%2]
-        tup = (other, val) if i else (val,other)
+        if key in self.database:
+            other = self.database[key][(i-1)%2]
+            tup = (other, val) if i else (val,other)
+        else:
+            tup = (val, None)
         return tup
 
     def _exist(self, ip):

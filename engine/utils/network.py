@@ -186,7 +186,7 @@ def ServerTcp(ip, port, client_fucntion, logger, Stop_Condition = False, objeto 
             Thread(target=client_fucntion, args=(client, addr), daemon=True).start()
 
 
-def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=None):
+def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=None, Thread_Serve = True):
     with socket(type=SOCK_DGRAM) as sock:
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
         sock.bind((ip, port))
@@ -194,8 +194,11 @@ def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=No
             if objeto and Stop_Condition(objeto):
                 break
             msg, addr = sock.recvfrom(1024)
-            logger.debug(f'Recieved UDP Connection from {addr}')
-            Thread(target=client_fucntion,args=(msg,addr),daemon=True).start()
+            logger.debug(f'Recieved UDP Connection from {addr} to {port}')
+            if Thread_Serve:
+                Thread(target=client_fucntion,args=(msg,addr),daemon=True).start()
+            else:
+                client_fucntion(msg,addr)
 
 
 def WhoCanServeMe(broadcast_addr, port, data_container, lock):

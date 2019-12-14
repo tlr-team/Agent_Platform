@@ -43,12 +43,10 @@ class Discovering:
         Thread(target=self._write, daemon=True).start()
         Thread(target=self._refresh, daemon=True).start()
         self.disclogger.info(f'Discover Server Initiated at {self.port}')
-        ServerUdp('',self.port,self._listen, self.disclogger)
+        ServerUdp('',self.port,self._listen, self.disclogger, Thread_Serve=False)
 
     # Hilo que va a recibir el mensaje de broadcast y procesarlo
     def _listen(self, msg ,ip):
-        if ip[0] not in self.partners:
-            self.disclogger.debug(f"NEW IP FOUND {ip[0]}")
             with self.mutex:
                 self.partners[ip[0]] = self.ttl
                 self.disclogger.debug(f'TTL restablished for {ip[0]}')

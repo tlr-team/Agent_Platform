@@ -13,11 +13,14 @@ from multiprocessing import Lock, Process, Value
 
 
 class LESDB(DbLeader, SharedDataBase):
-    def __init__(self, ip, mask, dbport, leport, world_port, logger=getLogger(), pt=10, rt=20, ttl=4):
+    def __init__(self, ip, mask, dbport, leport, world_port, logger=getLogger(), pt=10, rt=20, ttl=4, check_time=5, assing_job_time=10, remove_dead_time=10):
         SharedDataBase.__init__(self, ip, mask, dbport, logger)
         DbLeader.__init__(self, ip, mask , leport, logger, pt , rt , ttl )
         self.world_port = world_port
         self.logger = logger
+        self.check_time = check_time
+        self.assing_job_time = assing_job_time
+        self.remove_dead_time = remove_dead_time
 
     def _assign_work(self, time):
         while(True):
@@ -45,14 +48,16 @@ class LESDB(DbLeader, SharedDataBase):
                                     Tcp_Message({'TO_BACKUP':set_backup},ip,self.dbport, Void)
                                     self.logger.debug(f'Sended TO_BACKUP to {ip}')
                                 self.logger.debug(f" database {self.database}")
+            else:
+                self.logger.debug(f'NO IP FOUND FOR JOB')
             sleep(time)
     
     def _is_useful_info(self, info, ip):
         ID = info['INFO_ACK']
-        if info >= 0:
+        if ID >= 0:
             with self.dblock:
                 for i in [0,1]:
-                    if not self.database[ID][i]:
+                    if ID == self.main_count or not self.database[ID][i]:
                         self.database[ID] = self._build_tuple(ID, i, ip)
                         self.logger.debug(f'REUSED INFO { info } from {ip}')
                         return (True, i)
@@ -75,10 +80,14 @@ class LESDB(DbLeader, SharedDataBase):
                 with self.deadlock:
                     while(len(self.deadlist)):
                         ip = self.deadlist.pop()
-                        _, index = self._ledelete(ip)
-                        if index == 0:
-                            self._get_help()
-                        self.logger.debug(f'Deleted {ip}')
+                        val = self._ledelete(ip)
+                        if val:
+                            index = val[1]
+                            if index == 0:
+                                self._get_help()
+                            self.logger.debug(f'Deleted {ip}')
+                        else:
+                            self.logger.debug(f'{ip} not found for delete')
             sleep(time)
 
     def _world_serve(self):
@@ -120,13 +129,13 @@ class LESDB(DbLeader, SharedDataBase):
                 self.logger.debug('Im Leader Now')
                 time = 10
                 self.logger.debug(f'live or dead checker initiated')
-                thread_list.append(Thread(target=self._check, args=(time,), name='Live or Dead Checker'))
+                thread_list.append(Thread(target=self._check, args=(self.check_time,), name='Live or Dead Checker'))
                 self.logger.debug(f'world server initiated')
                 thread_list.append(Thread(target=self._world_serve, name='World Server Daemon'))
                 self.logger.debug(f'job assigner initiated')
-                thread_list.append(Thread(target=self._assign_work,args=(time,),name='Job Assigner'))
+                thread_list.append(Thread(target=self._assign_work,args=(self.assing_job_time,),name='Job Assigner'))
                 self.logger.debug(f'Dead Burrier')
-                thread_list.append(Thread(target=self._remove_dead,args=(time,),name='Dead Burrier'))
+                thread_list.append(Thread(target=self._remove_dead,args=(self.remove_dead_time,),name='Dead Burrier'))
             else: 
                 self.logger.debug('Im Worker Now')
                 #thread_list.append(Thread(target=ServerTcp,args=(self.ip,self.dbport,self._process_request, self.logger, lambda x: x.im_leader, self)))
@@ -138,7 +147,6 @@ class LESDB(DbLeader, SharedDataBase):
             for i in thread_list:
                 i.join()
             self.logger.debug(f'Changed Function')
-        pass
 
 def Worker_Process(ip, port, function, shared_memory_func, shared_memory, lock):
     logger = getLogger()
