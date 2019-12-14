@@ -108,14 +108,13 @@ class DbLeader(Leader_Election):
                     return (key, self.database[key][1])
             return None
 
-    def _build_tuple(self, key, i, val):
-        with self.dblock:
-            if key in self.database:
-                other = self.database[key][(i-1)%2]
-                tup = (other, val) if i else (val,other)
-            else:
-                tup = (val, None)
-            return tup
+    def _build_tuple(self, key, i, val, lock = False):
+        if key in self.database:
+            other = self.database[key][(i-1)%2]
+            tup = (other, val) if i else (val,other)
+        else:
+            tup = (val, None)
+        return tup
 
     def _exist(self, ip):
         with self.dblock:

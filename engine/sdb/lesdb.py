@@ -34,7 +34,7 @@ class LESDB(DbLeader, SharedDataBase):
                             info = Tcp_Message({'INFO':''},ip,self.dbport)
                             if info != None:
                                 self.logger.debug(f'recieved info {info} from {ip}')
-                                val, backup = self._is_useful_info(info, ip)
+                                val, backup, id = self._is_useful_info(info, ip)
                                 if not val:
                                     id, backup = self._leinsert(ip)
                                     self.logger.debug(f'id and backup to {ip}: {id, backup}')
@@ -55,13 +55,13 @@ class LESDB(DbLeader, SharedDataBase):
     def _is_useful_info(self, info, ip):
         ID = info['INFO_ACK']
         if ID >= 0:
-            with self.dblock:
-                for i in [0,1]:
-                    if ID == self.main_count or not self.database[ID][i]:
-                        self.database[ID] = self._build_tuple(ID, i, ip)
-                        self.logger.debug(f'REUSED INFO { info } from {ip}')
-                        return (True, i)
-        return (False, 0)
+            for i in [0,1]:
+                if ID == self.main_count or not self.database[ID][i]:
+                    #self.database[ID] = self._build_tuple(ID, i, ip)
+                    self._leinsert(ip, ID)
+                    self.logger.debug(f'REUSED INFO { info } from {ip}')
+                    return (True, i, ID)
+        return (False, 0, ID)
         
     def _get_help(self, ID):
         self.logger.debug(f'ID at get_help {ID}')
