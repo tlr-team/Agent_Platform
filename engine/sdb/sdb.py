@@ -53,6 +53,7 @@ class SharedDataBase(SimpleDataBase):
 
         elif 'INFO' in request:
             sock.send(Encode_Request({"INFO_ACK":self.id}))
+            self.sdblogger.debug(f'INFO_ACK SENDED')
 
         elif 'SET_BACKUP' in request:
             self.im_backup = False
