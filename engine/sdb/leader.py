@@ -116,8 +116,9 @@ class DbLeader(Leader_Election):
         return tup
 
     def _exist(self, ip):
-        for _,tup in self.database.items():
-            if ip in tup:
-                return True
-        return False
+        with self.dblock:
+            for _,tup in self.database.items():
+                if ip in tup:
+                    return True
+            return False
     #endregion
