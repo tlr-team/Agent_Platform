@@ -194,7 +194,7 @@ def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=No
             if objeto and Stop_Condition(objeto):
                 break
             msg, addr = sock.recvfrom(1024)
-            #logger.debug(f'Recieved UDP Connection from {addr}')
+            logger.debug(f'Recieved UDP Connection from {addr}')
             Thread(target=client_fucntion,args=(msg,addr),daemon=True).start()
 
 

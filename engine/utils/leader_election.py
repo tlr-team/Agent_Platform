@@ -51,6 +51,7 @@ class Discovering:
             self.disclogger.debug(f"NEW IP FOUND {ip[0]}")
             with self.mutex:
                 self.partners[ip[0]] = self.ttl
+                self.disclogger.debug(f'TTL restablished for {ip[0]}')
 
     # Hilo que va a enviar cada cierto tiempo definido un mensaje broadcast para decir que esta vivo
     def _write(self):

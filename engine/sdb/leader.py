@@ -46,6 +46,7 @@ class DbLeader(Leader_Election):
                     break
                 for k in range(0,2):
                     if i == self.database[j][k]:
+                        self.lelogger.debug(f'{i} present at [{j}][{k}] in {self.database}')
                         present = True
                         break
             if not present:
