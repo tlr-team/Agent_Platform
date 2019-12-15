@@ -203,11 +203,19 @@ def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=No
 
 def WhoCanServeMe(broadcast_addr, port, data_container, lock):
     while(True):
-        answer = Send_Broadcast_Message({'WHOCANSERVEME':''}, broadcast_addr, port, Udp_Full_Response)
+        answer = Send_Broadcast_Message({'WHOCANSERVEME':''}, broadcast_addr, port, WhoCanServeMe_Response)
         if 'ME' in answer:
             with lock:
-                data_container.append(answer[1][0])
+                data_container.update([a[0] for a in answer])
         sleep(5)
+
+def WhoCanServeMe_Response(sock):
+    lista = []
+    try:
+        while(True):
+            lista.append(sock.revfrom(1024))
+    except:
+        return lista
 
 def WhoCanServeMe_Server(port, client_fucntion, logger, stop_condition=False, objeto=None):
     ServerUdp('',port, client_fucntion, logger , stop_condition, objeto)
