@@ -204,7 +204,7 @@ def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=No
 def WhoCanServeMe(broadcast_addr, port, data_container, lock):
     while(True):
         answer = Send_Broadcast_Message({'WHOCANSERVEME':''}, broadcast_addr, port, Udp_Full_Response)
-        if answer != '':
+        if 'ME' in answer:
             with lock:
                 data_container.append(answer[1][0])
         sleep(5)
