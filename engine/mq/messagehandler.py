@@ -2,48 +2,29 @@ from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR
 from time import sleep
 from threading import Thread, Lock
 from ..utils.logger import getLogger
-from ..utils.network import Decode_Response, Encode_Request, Discovering
+from ..utils.network import Decode_Response, Encode_Request, Udp_Message
 from ..utils.leader_election import Leader_Election
 
 
-class MessageHandler(Leader_Election):
-    def __init__(self, port_reciever, port_reader):
-        #FIXME ver ip puerto y funcion
-        super(MessageHandler,self).__init__("10.10.10.1",24,9006)
-        self.p_reciever, self.p_reader = port_reciever, port_reader
+class MessageHandler:
+    def __init__(self, logger = getLogger(), client_port=10001, message_router_port=10002, discovering_port=10003):
+        self.client_port , self.router_port, self.discovering_port = client_port. message_router_port . discovering_port
         self.lock_q = Lock()
         self.queue = []
-        self.logger = getLogger()
-        self.logger.info(f'clients port:{self.p_reciever}, router port:{self.p_reader}')
-        Thread(target=self._client_serve, daemon=True, name='client_server').start()
-        Thread(target=self._router_serve, daemon=True, name='router_server').start()
+        self.logger = logger
+        self.logger.info(f'clients port:{self.client_port}, router port:{self.router_port}')
         while True:
             sleep(10)
 
-    # region Client
-    def _client_serve(self):
-        self.logger.info('ready for clients...')
+    def _server(self, client = True):
+        self.logger.info('ready for clients...' if client else 'ready for routers...')
         with socket(type = SOCK_DGRAM) as sock:
             sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
-            sock.bind(('', self.p_reciever))
-            sock.listen()
+            sock.bind(('', self.client_port if client else self.router_port))
 
             while(True):
                 rawmsg, addr = sock.recvfrom(2048)
-                Thread(target=self._recieve, args=(rawmsg, addr), daemon = True).start()
-    # endregion
-
-    def _router_serve(self):
-        self.logger.info('ready for routers...')
-        with socket(type = SOCK_DGRAM) as sock:
-            sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
-            sock.bind(('', self.p_reader))
-            sock.listen()
-
-            while(True):
-                rawmsg, addr = sock.recvfrom(2048)
-                Thread(target=self._read, args=(rawmsg, addr), daemon = True).start()
-
+                Thread(target=self._recieve if client else self._read, args=(rawmsg, addr), daemon = True).start()
 
 
     # hilo que se encarga de procesar los pedidos de los clientes
@@ -54,22 +35,23 @@ class MessageHandler(Leader_Election):
         if 'get' in msg:
             msg.update({'ip': addr[0], 'port': addr[1]})
 
-        with self.lock_q:
-            self.queue.insert(0, msg)
+            with self.lock_q:
+                self.queue.insert(0, msg)
+        
+        elif 'HOWCANSERVEME' in msg:
+            Udp_Message({'ME':''}, *addr)
 
     # Hilo que se encarga de procesar los pedidos hacia los routers
     def _read(self, rawmsg, addr):
         msg = Decode_Response(rawmsg)
-        if msg != 'get':
-            self.logger.error(f'wierd petition from addr {addr}.')
-            exit()
-        self.logger.info(f'request from router: {msg}')
-
-        with self.lock_q:
-            self.logger.info(f'queue.size() -> {self.queue}')
-            msg = self.queue.pop() if self.queue else {}
+        self.logger.info(f'request {msg} from router: {addr}')
+        if 'get' in msg:
+            with self.lock_q:
+                self.logger.info(f'queue.size() -> {self.queue}')
+                msg = self.queue.pop() if self.queue else {}
             if len(msg):
-                self.logger.info(f'sended to router: {msg}')
-
-                with socket(type = SOCK_DGRAM) as sock:
-                    sock.sendto(Encode_Request(msg), addr)
+                Udp_Message(msg, *addr)
+                self.logger.info(f'sended {msg} to router: {addr}')
+                
+        elif 'HOWCANSERVEME' in msg:
+            Udp_Message({'ME':''}, *addr)

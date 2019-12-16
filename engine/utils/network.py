@@ -44,7 +44,7 @@ def retry(time_to_sleep, times=1, message='No es posible conectar, reintentando'
 
 # Funcion por defecto si no se quiere procesar el mesaje broadcast
 def Void(socket):
-    pass
+    return -1
 
 
 # Función que envia un mensaje (en bytes) mediante  broadcast y devuelve el resultado de una función a la que se le pasa el socket
@@ -149,7 +149,7 @@ def Tcp_Message(msg, ip, port, function=Tcp_Sock_Reader):
             tmp = Encode_Request(msg)
             sock.send(tmp)
             response = function(sock)
-        except:
+        except Exception as e:
             return None
     return response
 
@@ -192,7 +192,7 @@ def ServerTcp(
             Thread(target=client_fucntion, args=(client, addr), daemon=True).start()
 
 
-def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=None):
+def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=None, Thread_Serve = True):
     with socket(type=SOCK_DGRAM) as sock:
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
         sock.bind((ip, port))
@@ -200,19 +200,32 @@ def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=No
             if objeto and Stop_Condition(objeto):
                 break
             msg, addr = sock.recvfrom(1024)
-            # logger.debug(f'Recieved UDP Connection from {addr}')
-            Thread(target=client_fucntion, args=(msg, addr), daemon=True).start()
+            #logger.debug(f'Recieved UDP Connection from {addr} to {port}')
+            if Thread_Serve:
+                Thread(target=client_fucntion,args=(msg,addr),daemon=True).start()
+            else:
+                client_fucntion(msg,addr)
 
 
-def WhoCanServeMe(broadcast_addr, port, data_container, lock):
-    while True:
-        answer = Send_Broadcast_Message(
-            {'WHOCANSERVEME': ''}, broadcast_addr, port, Udp_Full_Response
-        )
-        if answer != '':
+def WhoCanServeMe(broadcast_addr, port, data_container, lock, timetosleep = 5):
+    while(True):
+        WhoCanServeMe_request(broadcast_addr, port, data_container, lock)
+        sleep(timetosleep)
+
+def WhoCanServeMe_request(broadcast_addr, port, data_container, lock):
+    answer = Send_Broadcast_Message({'WHOCANSERVEME':''}, broadcast_addr, port, WhoCanServeMe_Response)
+    for i in answer:
+        if 'ME' in i:
             with lock:
-                data_container.append(answer[1][0])
-        sleep(5)
+                data_container.update([a[0] for a in answer])
+
+def WhoCanServeMe_Response(sock):
+    lista = []
+    try:
+        while(True):
+            lista.append(sock.revfrom(1024))
+    except:
+        return lista
 
 
 def WhoCanServeMe_Server(
