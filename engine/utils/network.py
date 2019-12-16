@@ -45,7 +45,7 @@ def retry(time_to_sleep, times=1, message='No es posible conectar, reintentando'
 
 # Funcion por defecto si no se quiere procesar el mesaje broadcast
 def Void(socket):
-    pass
+    return -1
 
 
 # Función que envia un mensaje (en bytes) mediante  broadcast y devuelve el resultado de una función a la que se le pasa el socket
@@ -201,13 +201,17 @@ def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=No
                 client_fucntion(msg,addr)
 
 
-def WhoCanServeMe(broadcast_addr, port, data_container, lock):
+def WhoCanServeMe(broadcast_addr, port, data_container, lock, timetosleep = 5):
     while(True):
-        answer = Send_Broadcast_Message({'WHOCANSERVEME':''}, broadcast_addr, port, WhoCanServeMe_Response)
-        if 'ME' in answer:
+        WhoCanServeMe_request(broadcast_addr, port, data_container, lock)
+        sleep(timetosleep)
+
+def WhoCanServeMe_request(broadcast_addr, port, data_container, lock):
+    answer = Send_Broadcast_Message({'WHOCANSERVEME':''}, broadcast_addr, port, WhoCanServeMe_Response)
+    for i in answer:
+        if 'ME' in i:
             with lock:
                 data_container.update([a[0] for a in answer])
-        sleep(5)
 
 def WhoCanServeMe_Response(sock):
     lista = []
