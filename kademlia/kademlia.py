@@ -283,7 +283,7 @@ class KademliaProtocol(Service):
                 f'do_store_value to {cont} of {key}:({value},{store_time}).'
             )
             if not self.do_store_value(cont, key, value, store_time)[0]:
-                error(f'Unable to connect to {cont}.')
+                error(f'Unable to connect to (kclosest) iteration {cont}.')
             else:
                 success += 1
         return success != 0
