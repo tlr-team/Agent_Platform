@@ -36,7 +36,8 @@ class KademliaProtocol(Service):
         b=DefaultBSize,
         k=DefaultKSize,
         a=DefaultAlfaSize,
-        t_expire = 8
+        t_expire = 8,
+        t_rediscover= 10,
     ):
         super(KademliaProtocol, self).__init__()
         self.k, self.b, self.a = k, b, a
@@ -64,8 +65,16 @@ class KademliaProtocol(Service):
                 debug(f'[Expiration] Sleep: {t_expire}')
                 sleep(t_expire)
 
-
-        Thread(target=threaded_expire).start()
+        def threaded_update_network():
+            while True:
+                if self.initialized:
+                    debug(f'[Update Net] Start.')
+                    self.exposed_update_network()
+                debug(f'[Update Net] Sleep: {t_rediscover}')
+                sleep(t_rediscover)
+                
+        Thread(target=threaded_update_network, daemon=True).start()
+        Thread(target=threaded_expire, daemon=True).start()
 
     def exposed_update_network(self):
         if not self.initialized:
