@@ -588,6 +588,7 @@ class KademliaProtocol(Service):
             return
         if not self.bucket_list.add_contact(contact):
             # bucket full
+            to_rem = None
             bucket = self.bucket_list.get_bucket(contact.id)
             bucket.lock.acquire()
             for cont in bucket:
