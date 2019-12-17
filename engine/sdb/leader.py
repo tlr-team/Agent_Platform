@@ -72,7 +72,11 @@ class DbLeader(Leader_Election):
         if ip != self.ip:
             with self.dblock:
                 self.node_count += 1
-                if not id:
+                if id == self.main_count:
+                    self.database[self.main_count] = (ip,None)
+                    self.main_count += 1
+                    return (self.main_count -1 , 0)
+                elif id is None:
                     for i in [0,1]:
                         for key in self.database:
                             if self.database[key][i] == None:
