@@ -4,7 +4,7 @@ from pathlib import Path
 from yaml import load, FullLoader
 from random import randint
 from time import sleep
-from .. utils.network import Udp_Message, WhoCanServeMe_request, Get_Broadcast_Ip, Udp_Response
+from .. utils.network import Udp_Message, WhoCanServeMe_request, Get_Broadcast_Ip, Udp_Response, Send_Broadcast_Message, WhoCanServeMe_Response, Decode_Response
 from socket import gethostbyname, socket, SOCK_STREAM, SO_REUSEADDR, SOL_SOCKET, SOCK_DGRAM
 
 class Client(Cmd):
@@ -23,16 +23,20 @@ class Client(Cmd):
         self.ip = ip
         self.mask = mask
         self.state = 0 # 0 non running, # 1 running (server)
+        self.prompt = 'lragentplatform: '
+        self.intro = "Bienvenidos a la plataforma de agentes LR, escriba ? para listar los comandos"
 
     def preloop(self):
         Thread(target=self._get_attenders, daemon=True).start()
         Thread(target=self._publish, daemon=True).start()
+        Thread(target=self._discover_server, daemon=True).start()
 
     def do_get_service_list(self, arg):
         if len(self.attenders_list):
             with self.attenders_list_lock:
                 choice = randint(0, len(self.attenders_list) -1)
                 self.service_list = Udp_Message({'get':'list'}, self.attenders_list[choice], self.connection_port, Udp_Response)
+        self.do_show_service_list(None)
     
     def do_show_service_list(self, arg):
         print('Service List: ')
@@ -40,6 +44,7 @@ class Client(Cmd):
             print(f'{i+1} : {name}')
 
     def do_connect(self, arg):
+        self.state = 1
         Thread(target=self._serve, daemon=True).start()
         
 
@@ -50,12 +55,12 @@ class Client(Cmd):
     def do_get_agent_list(self, arg):
         try:
             with self.attenders_list_lock:
-                choice = self.service_list[int(arg)]
+                choice = self.service_list[int(arg)-1]
                 index = randint(0, len(self.attenders_list) -1)
                 self.agent_list = Udp_Message({'get': choice}, self.attenders_list[index], self.connection_port, Udp_Response)
+                self.do_show_agent_list(None)
         except:
             self.agent_list = []
-            print(f"Wrong Input: {arg}")
 
     def do_show_agent_list(self, arg):
         print('Agent List: ')
@@ -69,23 +74,20 @@ class Client(Cmd):
         if len(self.agent_list):
             agent = self.agent_list.pop()
             # Dirección del agente productor
+            print('agent', agent)
             server = (agent["ip"], agent["port"])
             ConnectionType = agent["protocol"]  # TCP o UDP
 
             # socket de servicio (local) "localhost:8000 para simplificar el acceso del cliente"
             local :socket
 
-            if ConnectionType == "TCP":
-                local = socket(type=SOCK_STREAM)
-                local.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
-                local.bind((ip, port))
-                local.listen(1)
-            else:
-                local = socket(type=SOCK_DGRAM)
-                local.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
-                local.bind((ip, port))
-
+            local = socket(type=SOCK_STREAM if ConnectionType == 'TCP' else SOCK_DGRAM)
+            local.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+            local.bind((ip, port))
             local.settimeout(5)
+
+            if ConnectionType == "TCP":
+                local.listen(1)
 
             # Server que hace forwarding de las peticiones a la interfaz local al servidor agente
             while self.state:
@@ -93,7 +95,6 @@ class Client(Cmd):
                     msg: bytes
                     if ConnectionType == "TCP":
                         client, addr = local.accept()
-                        client.settimeout(5)
                         # recibir el pedido del socket local
                         msg = client.recv(1024)
                         # hilo TCP
@@ -107,13 +108,14 @@ class Client(Cmd):
                         msg, addr = local.recvfrom(1024)
                         Thread(
                             target=process_client_request,
-                            args=(ConnectionType, msg, server, addr),
+                            args=(ConnectionType, msg, addr, server),
                             daemon=True,
                         ).start()
                 except:
                     pass
             # FIXME hilo que chequee que el usuario no pare el proceso
             # state = "Terminado"
+            print("SERVER CERRANDO")
             local.close()
 
     def _publish(self):
@@ -133,17 +135,29 @@ class Client(Cmd):
     def _get_attenders(self):
         while(True):
             if self.ip and self.mask:
-                WhoCanServeMe_request(Get_Broadcast_Ip(self.ip, self.mask), self.connection_port, self.attenders_list, self.attenders_list_lock)
+                Thread(target=Send_Broadcast_Message, args=({'WHOCANSERVEME':''}, Get_Broadcast_Ip(self.ip, self.mask), self.connection_port), daemon=True).start()
 
             for i in ['m1.lragentplatfrom.grs.uh.cu','m2.lragentplatfrom.grs.uh.cu']:
                 try:
                     with self.attenders_list_lock:
-                        self.attenders_list.append(gethostbyname(i))
+                        newone = gethostbyname(i)
+                        if not newone in self.attenders_list:
+                            self.attenders_list.append()
                 except:
                     pass
             sleep(self.attender_refresh_time)
 
-
+    def _discover_server(self):
+        with socket(type=SOCK_DGRAM) as sock:
+            sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+            sock.bind(('', 10003))
+            while(True):
+                msg, addr = sock.recvfrom(1024)
+                post = Decode_Response(msg)
+                if 'ME' in post:
+                    with self.attenders_list_lock:
+                        if not addr[0] in self.attenders_list:
+                            self.attenders_list.append(addr[0])
 
 
     def _load_templates(self):
@@ -168,6 +182,8 @@ def process_client_request(ConnectionType, msg, addr, server, client=None):
     ) as cp:
         msg: bytes
         addr: tuple
+        
+        print(f'Connection from {server}, {msg}')
 
         if ConnectionType == "TCP":
             # enviar el request al productor (agente)
@@ -184,3 +200,6 @@ def process_client_request(ConnectionType, msg, addr, server, client=None):
             print(msgcp)
             # continuar leyendo
             msgcp = cp.recv(1) if ConnectionType == "TCP" else cp.recvfrom(1024)[0]
+        
+    if client:
+        client.close()
