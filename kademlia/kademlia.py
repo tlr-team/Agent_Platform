@@ -87,12 +87,12 @@ class KademliaProtocol(Service):
                 if not self.initialized:
                     raise Exception(f'KademliaProtocol initializing has fail.')
                 try:
-                    debug(f'Searching for {KademliaProtocol.service_name(KademliaProtocol)} RPyC Service.')
-                    nodes = discover(KademliaProtocol.service_name(KademliaProtocol))
+                    debug(f'Searching for {KademliaProtocol.service_name(self.__class__)} RPyC Service.')
+                    nodes = discover(KademliaProtocol.service_name(self.__class__))
                     debug(f'Finded: {nodes}.')
                 except DiscoveryError as e:
-                    error(f'Service:{KademliaProtocol.service_name(KademliaProtocol)} not found - {e}.')
-                    raise DiscoveryError(f'Service:{KademliaProtocol.service_name(KademliaProtocol)} not found - {e}.')
+                    error(f'Service:{KademliaProtocol.service_name(self.__class__)} not found - {e}.')
+                    raise DiscoveryError(f'Service:{KademliaProtocol.service_name(self.__class__)} not found - {e}.')
                 _any = 0
                 for ip,port in nodes:
                     if ip == self.contact.ip and port == self.contact.port:
