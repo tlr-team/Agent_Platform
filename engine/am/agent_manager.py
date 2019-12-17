@@ -15,6 +15,7 @@ from time import sleep
 from random import randint
 from socket import socket, AF_INET, SOCK_DGRAM, gethostbyname, gethostname
 from kademlia.contact import Contact
+from engine.utils.network import Decode_Response
 
 setup_logger(name='AgentManager')
 
@@ -32,6 +33,7 @@ class AgentManager(KademliaProtocol):
             with the identifier id taken from addr\n
             `id=Hash(addr)`
         '''
+
         hs = get_hash(addr=addr)
         return self.exposed_iter_find_value(hs)
 
@@ -40,9 +42,13 @@ class AgentManager(KademliaProtocol):
             Store the (id, (agent_info, store_time)) in the network.\n
             `id=Hash(agent_info.addr)`
         '''
-        assert (
+        debug(f'Processing petition post: {agent_info}')
+        agent_info = Decode_Response(agent_info)
+        if not (
             'ip' in agent_info and 'port' in agent_info and isinstance(store_time, int)
-        )
+        ):
+            error(f'Bad request: {agent_info}')
+            return False
         hs = get_hash(ip=agent_info['ip'], port=agent_info['port'])
         return self.exposed_iter_store(hs, agent_info, store_time)
 
@@ -53,16 +59,13 @@ class AgentManager(KademliaProtocol):
             return []
         records = {}
 
-        def update_records(db):
-            for k, vt in db.items():
+        with self.db_lock:
+            for k, vt in self.db.items():
                 records[k] = (
                     vt
                     if records.get(k) is None or records[k][1] < vt[1]
                     else records[k]
                 )
-
-        with self.db_lock:
-            update_records(self.db)
         return list(records.values())
 
     def exposed_all_nodes(self):
