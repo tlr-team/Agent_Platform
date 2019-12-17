@@ -216,11 +216,10 @@ class KademliaProtocol(Service):
         self.update_contacts(sender)
         debug(f'Requested by {sender}.')
         result = []
-        with self.bucket_list.buckets_lock:
-            for c in self.bucket_list.get_closest(key):
-                result.append(c.to_json())
-                if len(result) >= self.k:
-                    break
+        for c in self.bucket_list.get_closest(key):
+            result.append(c.to_json())
+            if len(result) >= self.k:
+                break
         debug(
             f'Sended {len(result)} contacts to {sender}.'
         )
@@ -515,6 +514,7 @@ class KademliaProtocol(Service):
     @retry(1, 1, message='do_store_value(retry) :: Fail to connect')
     def do_store_value(self, to_reciever: Contact, key, value, store_time):
         if to_reciever == self.contact:
+            print(to_reciever)
             debug(f'Storing in myself {key}:({value},{store_time}).')
             return self.exposed_store(None, int(key), str(value), store_time)
 
@@ -566,8 +566,7 @@ class KademliaProtocol(Service):
             return
         if not self.bucket_list.add_contact(contact):
             # bucket full
-            with self.bucket_list.buckets_lock:
-                bucket = self.bucket_list.get_bucket(contact.id)
+            bucket = self.bucket_list.get_bucket(contact.id)
             bucket.lock.acquire()
             for cont in bucket:
                 if not self.do_ping(cont):
