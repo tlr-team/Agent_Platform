@@ -40,8 +40,11 @@ class Client(Cmd):
     
     def do_show_service_list(self, arg):
         print('Service List: ')
-        for i,name in enumerate(self.service_list):
-            print(f'{i+1} : {name}')
+        if self.service_list:
+            for i,name in enumerate(self.service_list):
+                print(f'{i+1} : {name}')
+        else:
+            print("NO SERVICES TO SHOW")
 
     def do_connect(self, arg):
         self.state = 1
@@ -138,7 +141,7 @@ class Client(Cmd):
         while(True):
             if self.ip and self.mask:
                 Thread(target=Send_Broadcast_Message, args=({'WHOCANSERVEME':''}, Get_Broadcast_Ip(self.ip, self.mask), self.connection_port), daemon=True).start()
-                Thread(target=self._dns_search, daemon=True).start()
+                #Thread(target=self._dns_search, daemon=True).start()
             sleep(self.attender_refresh_time)
 
     def _dns_search(self):
