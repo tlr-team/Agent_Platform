@@ -128,3 +128,11 @@ class BucketList:
         with self.buckets_lock:
             res = self.buckets[i]
         return res
+
+    def get_all_contacts(self):
+        res = []
+        with self.buckets_lock:
+            for b in self.buckets:
+                if b:
+                    res.extend(b.contacts)
+        return res
