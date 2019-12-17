@@ -89,7 +89,7 @@ class DbLeader(Leader_Election):
                     for i in range(0,2):
                         if self.database[id][i] == None:
                             self.database[id] = self._build_tuple(id, i, ip)
-                            return (key, i)
+                            return (id, i)
 
     def _ledelete(self, ip):
         with self.dblock:
