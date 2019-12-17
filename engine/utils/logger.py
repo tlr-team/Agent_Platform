@@ -21,10 +21,10 @@ def setup_logger(name='', logfile='', level=DEBUG):
     a = asctime()
 
     basicConfig(
-        filename=f'log/debug_{logfile or name}_{a}.log',
+        filename=f'log/debug_{logfile or name}.log',
         filemode='w',
         level=level,
-        format='%(asctime)+1s %(levelname)-6s- %(name)+18s: \'%(funcName)s\' %(message)s',
+        format='%(asctime)+1s %(levelname)-6s- %(name)+18s: %(funcName)-15s - %(message)s',
         datefmt='%H:%M:%S',
     )
 
