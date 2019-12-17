@@ -23,7 +23,7 @@ class Client(Cmd):
         self.ip = ip
         self.mask = mask
         self.state = 0 # 0 non running, # 1 running (server)
-        self.prompt = 'lragentplatform: '
+        self.prompt = 'lragentplatform:# '
         self.intro = "Bienvenidos a la plataforma de agentes LR, escriba ? para listar los comandos"
 
     def preloop(self):
@@ -122,13 +122,15 @@ class Client(Cmd):
         while(True):
             self.template_list = self._load_templates()
             for service in self.template_list:
-                with self.attenders_list_lock:
-                    if len(self.attenders_list):
-                        index = randint(0, len(self.attenders_list)-1)
-                        choice = self.attenders_list[index]
-                        msg = {'post': service['service'], 'ip':service['ip'], 'port': service['port'], 'url' : service['url'], 'protocol': service['protocol']}
-                        ans = Udp_Message(msg, choice, self.connection_port)
-                        if not ans:
+                self.attenders_list_lock.acquire()
+                if len(self.attenders_list):
+                    index = randint(0, len(self.attenders_list)-1)
+                    choice = self.attenders_list[index]
+                    self.attenders_list_lock.release()
+                    msg = {'post': service['service'], 'ip':service['ip'], 'port': service['port'], 'url' : service['url'], 'protocol': service['protocol']}
+                    ans = Udp_Message(msg, choice, self.connection_port)
+                    if not ans:
+                        with self.attenders_list_lock:
                             self.attenders_list.pop(index)
             sleep(self.agent_publish_time)
     
@@ -137,14 +139,14 @@ class Client(Cmd):
             if self.ip and self.mask:
                 Thread(target=Send_Broadcast_Message, args=({'WHOCANSERVEME':''}, Get_Broadcast_Ip(self.ip, self.mask), self.connection_port), daemon=True).start()
 
-            for i in ['m1.lragentplatform.grs.uh.cu','m2.lragentplatform.grs.uh.cu']:
-                try:
-                    with self.attenders_list_lock:
-                        newone = gethostbyname(i)
-                        if not newone in self.attenders_list:
-                            self.attenders_list.append()
-                except:
-                    pass
+            #for i in ['m1.lragentplatform.grs.uh.cu','m2.lragentplatform.grs.uh.cu']:
+            #    try:
+            #        with self.attenders_list_lock:
+            #            newone = gethostbyname(i)
+            #            if not newone in self.attenders_list:
+            #                self.attenders_list.append()
+            #    except:
+            #        pass
             sleep(self.attender_refresh_time)
 
     def _discover_server(self):

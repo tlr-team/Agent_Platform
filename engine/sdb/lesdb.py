@@ -144,7 +144,7 @@ class LESDB(DbLeader, SharedDataBase):
                     break
                 try:
                     msg, addr = sock.recvfrom(1024)
-                    if 'WHOCANSERVE' in Decode_Response(msg):
+                    if 'WHOCANSERVEME' in Decode_Response(msg):
                         sock.sendto(Encode_Request({"ME":"DF"}),(addr[0], 10003))
                         print(f'SENDED ME TO {addr[0]}')
                 except:

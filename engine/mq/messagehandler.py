@@ -37,7 +37,8 @@ class MessageHandler:
         self.logger.info(f'arrive: {msg}, from: {addr}')
 
         if 'get' in msg or 'post' in msg:
-            msg.update({'ip': addr[0], 'port': addr[1]})
+            if 'get' in msg:
+                msg.update({'ip': addr[0], 'port': addr[1]})
 
             with self.lock_q:
                 self.queue.insert(0, msg)
