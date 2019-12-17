@@ -137,6 +137,7 @@ class LESDB(DbLeader, SharedDataBase):
     def _whocanserveme_server(self):
         with socket(type=SOCK_DGRAM) as sock:
             sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+            sock.bind(('',10001))
             sock.settimeout(5)
             while(True):
                 if not self.im_leader:
