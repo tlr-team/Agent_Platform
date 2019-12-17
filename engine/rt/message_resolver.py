@@ -29,50 +29,78 @@ from random import randint
 # Hilo2 desencola el request si existe , lo procesa y se conecta finalmente con el cliente con el resultado final
 
 class Message_Resolver:
-    def __init__(self ,ip ,mask, db_port, brd_port, thread_count = 1):
+    def __init__(self ,ip ,mask, brd_port=10001, thread_count = 1, db_port=10002):
         # mutex
         self.servers = []
         self.mutex = Semaphore()
         self.Broadcast_Address = Get_Broadcast_Ip(ip,mask)
         self.Broadcast_Port = brd_port
-        self.am_ip = "127.0.0.1"
-        self.sm_ip = "192.168.2.7"
+        self.sm_ip = None
         self.bd_port = db_port
         self.thread_count = thread_count
 
-    def serve(self):
+    def start(self):
         searcher = Thread(target=self._searcher,daemon=True,name="recieve")
+        Thread(target=self._discover_server, daemon=True).start()
         for i in range(0, self.thread_count):
             Thread(target=self._worker,daemon=True,name="worker" + str(i)).start()
         searcher.start()
         searcher.join()
     
     def _searcher(self):
-        WhoCanServeMe(self.Broadcast_Address, self.Broadcast_Port, self.servers, self.mutex)
+        print('Searcher initiated')
+        WhoCanServeMe(self.Broadcast_Address, self.Broadcast_Port, self.servers, self.mutex, 10)
+
+    def _discover_server(self):
+        print('Discover Initiated')
+        with socket(type=SOCK_DGRAM) as sock:
+            sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+            sock.bind(('', 10003))
+            while(True):
+                msg, addr = sock.recvfrom(1024)
+                post = Decode_Response(msg)
+                print(post, addr)
+                if 'ME' in post:
+                    if post['ME'] == 'MQ':
+                        with self.mutex:
+                            if not addr[0] in self.servers:
+                                print(f'SERVERS UPDATED WITH {addr[0]}')
+                                self.servers.append(addr[0])
+                    elif post['ME'] == 'DF':
+                        self.sm_ip = addr[0]
 
     def _worker(self):
-        with self.mutex:
-            if len(self.servers):
-                with self.mutex:
+        print('Worker Intiated')
+        while(True):
+            with self.mutex:
+                #TODO LEO AQUIIIIIIIIIII
+                if len(self.servers) and self.sm_ip:
                     choice = self.servers[randint(0, len(self.servers) - 1)]
-                req = Udp_Message({'get':''}, choice, self.Broadcast_Port , Udp_Response)
-                if "get" in req:
-                    ip = req["ip"]
-                    port = req["port"]
-                    info = req["get"]
-                    msg = {"get":info}
-                    response = None
-                    if info == "full_list":
-                        response = Tcp_Message(msg,self.am_ip,self.bd_port)
-                    else:
-                        response = Tcp_Message(msg,self.sm_ip,self.bd_port)
-                    #Enviar la respuesta
-                    Udp_Message(response,ip,port)
-                    print(response)
-                    
-                # Pedido desde un productor
-                else:
-                    #Mandar el update a la bd1
-                    #Mandar el update a la bd2
-                    #Tcp_Message(req,self.am_ip,self.bd_port)
-                    Tcp_Message(req,self.sm_ip,self.bd_port)
+                    req = Udp_Message({'get':''}, choice, self.Broadcast_Port , Udp_Response, 3)
+                    print(f'Recieved {req} from {choice}')
+                    if req:
+                        if "get" in req:
+                            ip = req["ip"]
+                            port = req["port"]
+                            info = req["get"]
+                            msg = {"get":info}
+                            response = None
+                            if info == "full_list":
+                                #TODO FULL LIST
+                                #response = Tcp_Message(msg,self.am_ip,self.bd_port)
+                                print('FULL LIST SENDED')
+                            else:
+                                response = Tcp_Message(msg,self.sm_ip,self.bd_port)
+                            #Enviar la respuesta
+                            Udp_Message(response,ip,port)
+                            print(response, f'SENDED TO {ip},{port}')
+                            
+                        # Pedido desde un productor
+                        elif 'post' in req:
+
+                            #Mandar el update a la bd1
+                            #Mandar el update a la bd2
+                            #TODO MANDAR EL POST AL AMS
+                            Tcp_Message(req,self.sm_ip,self.bd_port)
+                            print('UPDATE SENDED')
+            sleep(2)

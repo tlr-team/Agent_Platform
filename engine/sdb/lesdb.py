@@ -5,7 +5,8 @@ Leader Election Shared Db File
 from .leader import DbLeader
 from .sdb import SharedDataBase
 from time import sleep
-from ..utils.network import Tcp_Message, Void, Tcp_Sock_Reader, ServerTcp, Encode_Request
+from ..utils.network import Tcp_Message, Void, Tcp_Sock_Reader, ServerTcp, Encode_Request, Decode_Response
+from socket import socket, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR
 from ..utils.logger import getLogger
 from hashlib import sha1
 from threading import Thread
@@ -13,7 +14,7 @@ from multiprocessing import Lock, Process, Value
 
 
 class LESDB(DbLeader, SharedDataBase):
-    def __init__(self, ip, mask, dbport, leport, world_port, logger=getLogger(), pt=10, rt=20, ttl=4, check_time=5, assing_job_time=10, remove_dead_time=10):
+    def __init__(self, ip, mask, dbport, leport, world_port=10002, logger=getLogger(), pt=10, rt=20, ttl=4, check_time=5, assing_job_time=10, remove_dead_time=10, whocanserve_port=10001):
         SharedDataBase.__init__(self, ip, mask, dbport, logger)
         DbLeader.__init__(self, ip, mask , leport, logger, pt , rt , ttl )
         self.world_port = world_port
@@ -21,6 +22,7 @@ class LESDB(DbLeader, SharedDataBase):
         self.check_time = check_time
         self.assing_job_time = assing_job_time
         self.remove_dead_time = remove_dead_time
+        self.whocanserve_port = whocanserve_port
 
     def _assign_work(self, time):
         while(True):
@@ -132,9 +134,18 @@ class LESDB(DbLeader, SharedDataBase):
         self.lelogger.debug(f'ID Found {ID}')
         return self.database[ID][0] if ID != None else None
 
+    def _whocanserveme_server(self):
+        with socket(type=SOCK_DGRAM) as sock:
+            sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+            while(True):
+                msg, addr = sock.recvfrom(1024)
+                if 'WHOCANSERVE' in Decode_Response(msg):
+                    sock.sendto(Encode_Request({"ME":"DF"}),(addr[0], 10003))
+
     def serve(self,time):
         Thread(target=self._serve,daemon=True,name='Discover Server Daemon').start()
         Thread(target=self._check_leader,daemon = True, name='Leader Election Daemon').start()
+        Thread(target=self._whocanserveme_server,daemon = True, name='WHOCANSERVEME Daemon').start()
 
         while(True):
             thread_list = []

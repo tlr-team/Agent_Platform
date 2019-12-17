@@ -155,15 +155,15 @@ def Tcp_Message(msg, ip, port, function=Tcp_Sock_Reader):
 
 
 # Envia un mensaje udp
-def Udp_Message(msg, ip, port, function=Void):
+def Udp_Message(msg, ip, port, function=Void, timeout=10):
     with socket(type=SOCK_DGRAM) as sock:
+        sock.settimeout(timeout)
         try:
             sock.sendto(Encode_Request(msg), (ip, port))
+            return function(sock)
         except:
             return None
-        return function(sock)
-
-
+        
 def Udp_Response(socket):
     return Decode_Response(socket.recvfrom(2048)[0])
 
