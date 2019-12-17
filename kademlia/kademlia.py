@@ -36,11 +36,10 @@ class KademliaProtocol(Service):
         b=DefaultBSize,
         k=DefaultKSize,
         a=DefaultAlfaSize,
-        t_expire = 10000
+        t_expire = 4000
     ):
         super(KademliaProtocol, self).__init__()
         self.k, self.b, self.a = k, b, a
-        self.lock = Lock()
         self.db = {}
         self.db_lock = Lock()
         self.initialized = False
@@ -48,16 +47,17 @@ class KademliaProtocol(Service):
         self.bucket_list: BucketList
         self.contact: Contact
 
-        # def expire_thread(db, db_lock):
-        #     entries_to_remove = set()
-        #     while True:
-        #         sleep(t_expire)
-        #         with db_lock:
-                                
-        #             for k,tup in db.items():
-        #                 if entries_to_remove
+        def threaded_expire():
+            entries_to_remove = set()
+            while True:
+                with self.db_lock:
+                    for k,tup in self.db.items():
+                        if str(k,tup) in entries_to_remove:
+                            del self.db[k]
+                    entries_to_remove = set(str(k,tup) for k,tup in self.db.items())
+                sleep(t_expire)
 
-        # self.__expire_thread = Thread(target=)
+        Thread(target=threaded_expire).start()
 
     @staticmethod
     def service_name(cls):
@@ -103,10 +103,9 @@ class KademliaProtocol(Service):
                             conn = connect(ip, port)
                             debug(f'Connection established with ({ip}:{port}), attemp: {count}.')
                             resp = conn.root.ping(self.contact.to_json())
-                            debug(f'<PING> to ({ip}:{port}) response: {resp}.')
+                            debug(f'<PING> to ({ip}:{port}) response: ({resp})-{("Ping" if resp else "No ping")} responding.')
                             if resp:
                                 contact = Contact.from_json(resp)
-                                debug(f'Connection established with ({ip}:{port}).')
                                 break
                             else:
                                 error(f'Bad Response resul({resp}) from ({ip}:{port}).')
@@ -484,7 +483,7 @@ class KademliaProtocol(Service):
         debug(f'trying to connect to {contact}.')
         try:
             connection = connect(contact.ip, contact.port, config={'timeout':1})
-            debug(f'Doing ping to:{contact}')
+            debug(f'Pinging (from rpyc_connection) to :{contact}')
             connection.ping()
         except Exception as e:
             error(e)
