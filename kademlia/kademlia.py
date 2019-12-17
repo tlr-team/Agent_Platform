@@ -190,7 +190,6 @@ class KademliaProtocol(Service):
             sender = Contact.from_json(sender)
             self.update_contacts(sender)
         try:
-            debug(f'db_lock.acquire() {self.db_lock.locked()}')
             self.db_lock.acquire()
             stored_value, time = self.db[key]
         except KeyError:
@@ -199,7 +198,6 @@ class KademliaProtocol(Service):
             (value, store_time) if time < store_time else (stored_value, time)
         )
         debug(f'Stored at this node: ({key},{value}) at time {store_time}.')
-        debug('db_lock.release()')
         self.db_lock.release()
         self.export()
         debug(f'Finish with store requested by {sender}.')
@@ -213,15 +211,12 @@ class KademliaProtocol(Service):
         self.update_contacts(sender)
         debug(f'Requested by {sender}.')
         try:
-            debug(f'db_lock.acquire() {self.db_lock.locked()}')
             self.db_lock.acquire()
             value, store_time = self.db[key]
             debug(f'Found key:{key}, value:{value}.')
-            debug('db_lock.release()')
             self.db_lock.release()
             return value, store_time
         except KeyError:
-            debug('db_lock.release()')
             self.db_lock.release()
             debug(f'Key({key}) not found.')
             return None
@@ -510,11 +505,9 @@ class KademliaProtocol(Service):
         return connection
 
     def export(self):
-        debug(f'db_lock.acquire() {self.db_lock.locked()}')
         self.db_lock.acquire()
         with open(f'log/data.txt', 'w') as f:
             dump(self.db, f, indent=True)
-        debug(f'db_lock.release()')
         self.db_lock.release()
 
     # region Do functions
