@@ -221,7 +221,7 @@ class KademliaProtocol(Service):
             if len(result) >= self.k:
                 break
         debug(
-            f'Sended {len(result)} contacts to {sender}.'
+            f'Sended {len(result)} contacts to {sender}.\n{result}'
         )
         return result
 
@@ -502,8 +502,11 @@ class KademliaProtocol(Service):
     # region Do functions
     @retry(1, 1, message='do_ping(retry) :: Fail to connect')
     def do_ping(self, to_reciever: Contact):
+        result = None
         if to_reciever == self.contact:
-            return None
+            debug(f'Pinging to myself.')
+            return self.exposed_ping(to_reciever) 
+
         debug(f'Node not initialized.')
         con = self.connect_to(to_reciever)
         debug(f'Trying to ping to contact:{to_reciever}')
@@ -513,11 +516,10 @@ class KademliaProtocol(Service):
 
     @retry(1, 1, message='do_store_value(retry) :: Fail to connect')
     def do_store_value(self, to_reciever: Contact, key, value, store_time):
+        result = None
         if to_reciever == self.contact:
-            print(to_reciever)
             debug(f'Storing in myself {key}:({value},{store_time}).')
-            return self.exposed_store(None, int(key), str(value), store_time)
-
+            return self.exposed_store(self.contact.to_json(), int(key), str(value), store_time)
         try:
             con = self.connect_to(to_reciever)
         
@@ -527,35 +529,44 @@ class KademliaProtocol(Service):
             )
         except Exception as e:
             error(f'Has stopped because {e}')
+            con.close()
+            return False
         con.close()
         debug(f'Succefuly stored at contact: {to_reciever} result: {result}')
         return result
 
     @retry(1, 1, message='do_find_node(retry) :: Fail to connect')
     def do_find_node(self, to_reciever: Contact, key):
+        result = None
         if to_reciever == self.contact:
-            return []
-
+            debug(f'Find_node in myself {key}.')
+            return self.exposed_find_node(self.contact.to_json(), key)
         try:
             con = self.connect_to(to_reciever)
             debug(f'Trying to find node to contact:{to_reciever}')
             result = con.root.find_node(self.contact.to_json(), int(key))
         except Exception as e:
             error(f'Has stopped because {e}')
+            con.close()
+            return False
         con.close()
+        debug(f'Succefuly find node with contact: {to_reciever} result: {result}')
         return result
 
     @retry(1, 1, message='do_find_value(retry) :: Fail to connect')
     def do_find_value(self, to_reciever: Contact, key):
+        result = None
         if to_reciever == self.contact:
-            return None
-
+            debug(f'Find_value in myself {key}.')
+            return self.exposed_find_value(self.contact.to_json(), key)
         try:
             con = self.connect_to(to_reciever)
             debug(f'Trying to find value to contact:{to_reciever}')
             result = con.root.find_value(self.contact.to_json(), int(key))
         except Exception as e:
             error(f'Has stopped because {e}')
+            con.close()
+            return False
         con.close()
         return result
     # endregion
