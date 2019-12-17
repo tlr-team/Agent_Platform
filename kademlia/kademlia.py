@@ -59,6 +59,17 @@ class KademliaProtocol(Service):
 
         Thread(target=threaded_expire).start()
 
+    def exposed_update_network(self):
+        if not self.initialized:
+            error(f'Node not initialized')
+        service_name = KademliaProtocol.service_name(self.__class__)
+        nodes = discover(service_name)
+        for node in nodes:
+            tcontact = Contact(*node)
+            debug(f'Pinging to node: {tcontact}')
+            result, _ = self.do_ping(tcontact)
+            debug(('Successfull' if result else 'Unsuccessfull') + f' ping to node: {tcontact}')
+
     @staticmethod
     def service_name(cls):
         return cls.__name__.split('Service')[0]
@@ -531,7 +542,7 @@ class KademliaProtocol(Service):
             con.close()
             return False
         con.close()
-        debug(f'Succefuly stored at contact: {to_reciever} result: {result}')
+        debug(f'Successfully stored at contact: {to_reciever} result: {result}')
         return result
 
     @retry(1, 1, message='do_find_node(retry) :: Fail to connect')
@@ -549,7 +560,7 @@ class KademliaProtocol(Service):
             con.close()
             return False
         con.close()
-        debug(f'Succefuly find node with contact: {to_reciever} result: {result}')
+        debug(f'Successfully find node with contact: {to_reciever} result: {result}')
         return result
 
     @retry(1, 1, message='do_find_value(retry) :: Fail to connect')
