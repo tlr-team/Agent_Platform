@@ -138,16 +138,18 @@ class Client(Cmd):
         while(True):
             if self.ip and self.mask:
                 Thread(target=Send_Broadcast_Message, args=({'WHOCANSERVEME':''}, Get_Broadcast_Ip(self.ip, self.mask), self.connection_port), daemon=True).start()
-
-            #for i in ['m1.lragentplatform.grs.uh.cu','m2.lragentplatform.grs.uh.cu']:
-            #    try:
-            #        with self.attenders_list_lock:
-            #            newone = gethostbyname(i)
-            #            if not newone in self.attenders_list:
-            #                self.attenders_list.append()
-            #    except:
-            #        pass
+                Thread(target=self._dns_search, daemon=True).start()
             sleep(self.attender_refresh_time)
+
+    def _dns_search(self):
+        for i in ['m1.lragentplatform.grs.uh.cu','m2.lragentplatform.grs.uh.cu']:
+            try:
+                    newone = gethostbyname(i)
+                    with self.attenders_list_lock:
+                        if not newone in self.attenders_list:
+                            self.attenders_list.append()
+            except:
+                pass
 
     def _discover_server(self):
         with socket(type=SOCK_DGRAM) as sock:
