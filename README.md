@@ -36,10 +36,15 @@ estrategia de tolerancia a fallos de tipo crash y replicación de grado 2.
  
 ##### Registro de Agentes en la PLataforma
 Para Registrar un agente a la plataforma se debe crear un archivo con sinstaxis yaml que tenga los siguientes campos:
+
 * ip
+
 * port
+
 * url
+
 * protocol
+
 * service
 
 Preferiblemente estos archivos deben ser ubicados en la carpeta ../Templates del directorio donde se ejecuta el cliente.
