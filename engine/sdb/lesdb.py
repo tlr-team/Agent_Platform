@@ -137,15 +137,21 @@ class LESDB(DbLeader, SharedDataBase):
     def _whocanserveme_server(self):
         with socket(type=SOCK_DGRAM) as sock:
             sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+            sock.settimeout(5)
             while(True):
-                msg, addr = sock.recvfrom(1024)
-                if 'WHOCANSERVE' in Decode_Response(msg):
-                    sock.sendto(Encode_Request({"ME":"DF"}),(addr[0], 10003))
+                if not self.im_leader:
+                    break
+                try:
+                    msg, addr = sock.recvfrom(1024)
+                    if 'WHOCANSERVE' in Decode_Response(msg):
+                        sock.sendto(Encode_Request({"ME":"DF"}),(addr[0], 10003))
+                except:
+                    pass
 
     def serve(self,time):
         Thread(target=self._serve,daemon=True,name='Discover Server Daemon').start()
         Thread(target=self._check_leader,daemon = True, name='Leader Election Daemon').start()
-        Thread(target=self._whocanserveme_server,daemon = True, name='WHOCANSERVEME Daemon').start()
+       
 
         while(True):
             thread_list = []
@@ -160,6 +166,7 @@ class LESDB(DbLeader, SharedDataBase):
                 thread_list.append(Thread(target=self._assign_work,args=(self.assing_job_time,),name='Job Assigner'))
                 self.logger.debug(f'Dead Burrier')
                 thread_list.append(Thread(target=self._remove_dead,args=(self.remove_dead_time,),name='Dead Burrier'))
+                thread_list.append(Thread(target=self._whocanserveme_server, name='WHOCANSERVEME Daemon'))
             else: 
                 self.logger.debug('Im Worker Now')
                 #thread_list.append(Thread(target=ServerTcp,args=(self.ip,self.dbport,self._process_request, self.logger, lambda x: x.im_leader, self)))
