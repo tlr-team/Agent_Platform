@@ -51,11 +51,16 @@ class KademliaProtocol(Service):
             entries_to_remove = set()
             while True:
                 with self.db_lock:
+                    debug(f'[Expiration]db-before:{self.db}\nto_remove:{entries_to_remove}')
                     for k,tup in list(self.db.items()):
                         if (str(k)+str(tup)) in entries_to_remove:
                             del self.db[k]
-                    entries_to_remove = set(str(k)+str(tup) for k,tup in self.db.items())
+                    entries_to_remove = set(str(k)+':'+str(tup) for k,tup in self.db.items())
+                    debug(f'[Expiration]db-after:{self.db}')
+                debug(f'[Expiration] Sleep: {t_expire}')
                 sleep(t_expire)
+                debug(f'[Expiration] Collector begins')
+
 
         Thread(target=threaded_expire).start()
 
