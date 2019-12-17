@@ -33,8 +33,13 @@ class AgentManager(KademliaProtocol):
             with the identifier id taken from addr\n
             `id=Hash(addr)`
         '''
-
-        hs = get_hash(addr=addr)
+        try:
+            _addr = Decode_Response(addr)
+            _addr = (_addr['ip'], _addr['port'])
+            hs = get_hash(addr=_addr)
+        except Exception as e:
+            error(f'Bad Request:{addr} error: {e}')
+            return False
         return self.exposed_iter_find_value(hs)
 
     def exposed_add_agent(self, agent_info, store_time):
@@ -70,9 +75,6 @@ class AgentManager(KademliaProtocol):
 
     def exposed_all_nodes(self):
         ''' Gives all nodes in the node bucket list '''
-        pass
-
-    def exposed_iter_all_nodes(self):
         pass
 
     # endregion
