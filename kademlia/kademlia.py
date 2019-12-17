@@ -52,9 +52,9 @@ class KademliaProtocol(Service):
             while True:
                 with self.db_lock:
                     for k,tup in self.db.items():
-                        if str(k,tup) in entries_to_remove:
+                        if (str(k)+str(tup)) in entries_to_remove:
                             del self.db[k]
-                    entries_to_remove = set(str(k,tup) for k,tup in self.db.items())
+                    entries_to_remove = set(str(k)+str(tup) for k,tup in self.db.items())
                 sleep(t_expire)
 
         Thread(target=threaded_expire).start()
