@@ -43,7 +43,12 @@ class MessageHandler:
                 self.queue.insert(0, msg)
         
         elif 'WHOCANSERVEME' in msg:
+<<<<<<< Updated upstream
+            Udp_Message({'ME':''}, addr[0], 10004)
+=======
             Udp_Message({'ME':''}, addr[0], 10003)
+            print(f'UDPDATE SENT TO Client {addr[0]}')
+>>>>>>> Stashed changes
 
     # Hilo que se encarga de procesar los pedidos hacia los routers
     def _read(self, rawmsg, addr):

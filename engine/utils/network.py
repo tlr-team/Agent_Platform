@@ -214,17 +214,23 @@ def WhoCanServeMe(broadcast_addr, port, data_container, lock, timetosleep = 5):
 
 def WhoCanServeMe_request(broadcast_addr, port, data_container, lock):
     answer = Send_Broadcast_Message({'WHOCANSERVEME':''}, broadcast_addr, port, WhoCanServeMe_Response)
+    print('answer ',answer)
     for i in answer:
         if 'ME' in i:
             with lock:
                 data_container.update([a[0] for a in answer])
+                print('DATA CONTAINER UPDATED', data_container)
 
 def WhoCanServeMe_Response(sock):
     lista = []
     try:
         while(True):
-            lista.append(sock.revfrom(1024))
+            msg, addr = sock.revfrom(1024)
+            print(addr)
+            print(msg)
+            lista.append(Decode_Response(msg))
     except:
+        print('NO PACKAGE ARRIVES')
         return lista
 
 

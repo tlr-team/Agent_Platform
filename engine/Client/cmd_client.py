@@ -137,7 +137,7 @@ class Client(Cmd):
             if self.ip and self.mask:
                 Thread(target=Send_Broadcast_Message, args=({'WHOCANSERVEME':''}, Get_Broadcast_Ip(self.ip, self.mask), self.connection_port), daemon=True).start()
 
-            for i in ['m1.lragentplatfrom.grs.uh.cu','m2.lragentplatfrom.grs.uh.cu']:
+            for i in ['m1.lragentplatform.grs.uh.cu','m2.lragentplatform.grs.uh.cu']:
                 try:
                     with self.attenders_list_lock:
                         newone = gethostbyname(i)
@@ -150,7 +150,7 @@ class Client(Cmd):
     def _discover_server(self):
         with socket(type=SOCK_DGRAM) as sock:
             sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
-            sock.bind(('', 10003))
+            sock.bind(('', 10004))
             while(True):
                 msg, addr = sock.recvfrom(1024)
                 post = Decode_Response(msg)
