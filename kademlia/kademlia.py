@@ -50,6 +50,10 @@ class KademliaProtocol(Service):
         def threaded_expire():
             entries_to_remove = set()
             while True:
+                if not self.db or not self.started:
+                    sleep(t_expire)
+                    continue
+                debug(f'[Expiration] Collector begins')
                 with self.db_lock:
                     debug(f'[Expiration]db-before:{self.db}\nto_remove:{entries_to_remove}')
                     for k,tup in list(self.db.items()):
@@ -59,7 +63,6 @@ class KademliaProtocol(Service):
                     debug(f'[Expiration]db-after:{self.db}')
                 debug(f'[Expiration] Sleep: {t_expire}')
                 sleep(t_expire)
-                debug(f'[Expiration] Collector begins')
 
 
         Thread(target=threaded_expire).start()
