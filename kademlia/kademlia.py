@@ -36,6 +36,7 @@ class KademliaProtocol(Service):
         b=DefaultBSize,
         k=DefaultKSize,
         a=DefaultAlfaSize,
+        t_expire = 10000
     ):
         super(KademliaProtocol, self).__init__()
         self.k, self.b, self.a = k, b, a
@@ -46,7 +47,18 @@ class KademliaProtocol(Service):
         self.started = False
         self.bucket_list: BucketList
         self.contact: Contact
-    
+
+        # def expire_thread(db, db_lock):
+        #     entries_to_remove = set()
+        #     while True:
+        #         sleep(t_expire)
+        #         with db_lock:
+                                
+        #             for k,tup in db.items():
+        #                 if entries_to_remove
+
+        # self.__expire_thread = Thread(target=)
+
     @property
     def service_name(self):
         return self.__class__.__name__.split('Service')[0]
@@ -148,10 +160,10 @@ class KademliaProtocol(Service):
         return self.contact.to_json()
 
     def exposed_store(self, sender: Contact, key: int, value: str, store_time):
-        with self.db_lock:
-            debug(
-                f'Storing ({key},{value}) at time {store_time}.\ndb:{self.db}'
-            )
+        # with self.db_lock:
+        debug(
+            f'Storing ({key},{value}) at time {store_time}.\ndb:{self.db}'
+        )
         if not self.initialized:
             error(f'Node not initialized.')
             return False
@@ -160,6 +172,7 @@ class KademliaProtocol(Service):
             sender = Contact.from_json(sender)
             self.update_contacts(sender)
         try:
+            debug(f'db_lock.acquire() {self.db_lock.locked()}')
             self.db_lock.acquire()
             stored_value, time = self.db[key]
         except KeyError:
@@ -167,11 +180,11 @@ class KademliaProtocol(Service):
         self.db[key] = (
             (value, store_time) if time < store_time else (stored_value, time)
         )
-        debug(f'Store at this node: ({key},{value}) at time {store_time}.')
-        self.export(key, (value, store_time))
         debug(f'Stored at this node: ({key},{value}) at time {store_time}.')
+        debug('db_lock.release()')
         self.db_lock.release()
-        # debug(f'Finish with {sender}.')
+        self.export()
+        debug(f'Finish with store requested by {sender}.')
         return True
 
     def exposed_find_value(self, sender: Contact, key: int):
@@ -182,12 +195,15 @@ class KademliaProtocol(Service):
         self.update_contacts(sender)
         debug(f'Requested by {sender}.')
         try:
+            debug(f'db_lock.acquire() {self.db_lock.locked()}')
             self.db_lock.acquire()
             value, store_time = self.db[key]
             debug(f'Found key:{key}, value:{value}.')
+            debug('db_lock.release()')
             self.db_lock.release()
             return value, store_time
         except KeyError:
+            debug('db_lock.release()')
             self.db_lock.release()
             debug(f'Key({key}) not found.')
             return None
@@ -476,9 +492,13 @@ class KademliaProtocol(Service):
         debug(f'Connected to contact:{contact}')
         return connection
 
-    def export(self, key, val_time_tupl):
-        with open(f'log/data_{key}.txt', 'w') as f:
-            dump({key: val_time_tupl}, f, indent=True)
+    def export(self):
+        debug(f'db_lock.acquire() {self.db_lock.locked()}')
+        self.db_lock.acquire()
+        with open(f'log/data.txt', 'w') as f:
+            dump(self.db, f, indent=True)
+        debug(f'db_lock.release()')
+        self.db_lock.release()
 
     # region Do functions
     @retry(1, 1, message='do_ping(retry) :: Fail to connect')
@@ -492,17 +512,23 @@ class KademliaProtocol(Service):
         con.close()
         return result
 
-    @retry(1, 1, message='do_store(retry) :: Fail to connect')
+    @retry(1, 1, message='do_store_value(retry) :: Fail to connect')
     def do_store_value(self, to_reciever: Contact, key, value, store_time):
         if to_reciever == self.contact:
+            debug(f'Storing in myself {key}:({value},{store_time}).')
             return self.exposed_store(None, int(key), str(value), store_time)
 
-        con = self.connect_to(to_reciever)
-        debug(f'Trying to store to contact:{to_reciever}')
-        result = con.root.store(
-            self.contact.to_json(), int(key), str(value), store_time
-        )
+        try:
+            con = self.connect_to(to_reciever)
+        
+            debug(f'Trying to store to contact:{to_reciever}')
+            result = con.root.store(
+                self.contact.to_json(), int(key), str(value), store_time
+            )
+        except Exception as e:
+            error(f'Has stopped because {e}')
         con.close()
+        debug(f'Succefuly stored at contact: {to_reciever} result: {result}')
         return result
 
     @retry(1, 1, message='do_find_node(retry) :: Fail to connect')
@@ -510,9 +536,12 @@ class KademliaProtocol(Service):
         if to_reciever == self.contact:
             return []
 
-        con = self.connect_to(to_reciever)
-        debug(f'Trying to find node to contact:{to_reciever}')
-        result = con.root.find_node(self.contact.to_json(), int(key))
+        try:
+            con = self.connect_to(to_reciever)
+            debug(f'Trying to find node to contact:{to_reciever}')
+            result = con.root.find_node(self.contact.to_json(), int(key))
+        except Exception as e:
+            error(f'Has stopped because {e}')
         con.close()
         return result
 
@@ -521,9 +550,12 @@ class KademliaProtocol(Service):
         if to_reciever == self.contact:
             return None
 
-        con = self.connect_to(to_reciever)
-        debug(f'Trying to find value to contact:{to_reciever}')
-        result = con.root.find_value(self.contact.to_json(), int(key))
+        try:
+            con = self.connect_to(to_reciever)
+            debug(f'Trying to find value to contact:{to_reciever}')
+            result = con.root.find_value(self.contact.to_json(), int(key))
+        except Exception as e:
+            error(f'Has stopped because {e}')
         con.close()
         return result
     # endregion
