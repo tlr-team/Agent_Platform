@@ -148,9 +148,10 @@ class KademliaProtocol(Service):
         return self.contact.to_json()
 
     def exposed_store(self, sender: Contact, key: int, value: str, store_time):
-        debug(
-            f'Storing ({key},{value}) at time {store_time}.'
-        )
+        with self.db_lock:
+            debug(
+                f'Storing ({key},{value}) at time {store_time}.\ndb:{self.db}'
+            )
         if not self.initialized:
             error(f'Node not initialized.')
             return False
@@ -403,26 +404,26 @@ class KademliaProtocol(Service):
         debug(f'do_find_node to contact:{contact}.')
         success, contacts = self.do_find_node(contact.to_json(), key)
         if not success:
-            debug(f'Unable to connect to {contact}.')
+            debug(f'Unable to connect to (do_find_node fail) {contact}.')
             return
-        debug(f'Connected to {contact}.')
+        debug(f'Connected to (do_find_node succes) {contact}.')
         self.update_contacts(contact)
         contacts = map(Contact.from_json, contacts)
         debug(f'Peers to search: {list(contacts)}.')
         for contact_finded in contacts:
             if contact_finded == self.contact:
                 continue
-            debug(f'Pinging to {contact_finded}.')
+            debug(f'Pinging to (contacts finded bucle) {contact_finded}.')
             if not self.do_ping(contact_finded)[0]:
                 debug(
-                    f'Unable to connect to {contact_finded}.'
+                    f'Unable to connect to (contacts finded bucle) {contact_finded}.'
                 )
                 continue
             self.update_contacts(contact_finded)
             lock.acquire()
             if not contact_finded in visited:
                 debug(
-                    f'Adding {contact_finded} to pendings.'
+                    f'Adding (contacts finded bucle) {contact_finded} to pendings.'
                 )
                 visited.add(contact_finded)
                 queue.put(contact_finded)
