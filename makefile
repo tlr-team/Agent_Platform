@@ -8,3 +8,5 @@ clean:
 run_test_am:
 	@python test/test_client.py
 
+run_sdb:
+	@python test/test_sdb.py
