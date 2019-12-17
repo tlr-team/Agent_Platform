@@ -1,7 +1,7 @@
 from rpyc import VoidService, SocketStream, connect_stream, connect as rpyc_connect
 from time import monotonic
 from threading import Lock, Thread, Semaphore
-from engine.utils.logger import getLogger
+from engine.utils.logger import getLogger, debug, error, info
 from time import sleep
 
 
@@ -34,7 +34,7 @@ class KSortedQueue:
 
     def add(self, node):
         self.lock.acquire()
-        print(f'{list(self.queue)}.Add({node})')
+        debug(f'{list(self.queue)}.Add({node})')
         for i, cur_node in enumerate(self.queue):
             if node.id ^ self.mid < cur_node.id ^ self.mid:
                 self.queue.insert(i, node)
@@ -63,7 +63,6 @@ class ThreadRunner:
         self.sem_alpha = Semaphore(value=alpha)
         self.count = 0
         self.count_lock = Lock()
-        self.logger = getLogger(name='Threader')
 
         def alpha_running(*_args, **_kwargs):
             self.sem_alpha.acquire()
@@ -77,16 +76,16 @@ class ThreadRunner:
     def run_1by1(self):
         while True:
             condition = self.condition()
-            self.logger.debug(f'start :: Start condition={condition}')
+            debug(f'Start condition={condition}')
             if condition:
                 with self.count_lock:
                     self.count += 1
                 t = Thread(target=self.target, args=self.args, kwargs=self.kwargs)
-                self.logger.debug(f'start :: Running ({self.count}) threads.')
+                debug(f'Running ({self.count}) threads.')
                 t.start()
                 t.join()
             else:
-                self.logger.debug(f'start :: Finish all threads.')
+                debug(f'Finish all threads.')
                 return
 
     def start(self):

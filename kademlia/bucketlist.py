@@ -34,8 +34,8 @@ class BucketList:
     def add_contact(self, contact: Contact):
         debug(f'[bucketlist] Adding contact: {contact}.')
         contact.touch()
-        with self.buckets_lock:
-            bucket = self.get_bucket(contact.id)
+        # with self.buckets_lock:
+        bucket = self.get_bucket(contact.id)
         bucket.lock.acquire()
         result = bucket.add_contact(contact)  # false -> the bucket is full
         bucket.lock.release()
@@ -50,8 +50,9 @@ class BucketList:
 
     def get_bucket(self, key):
         debug(f'[bucketlist] key:{key}.')
-        i = self.get_bucket_ind(key)
-        bucket = self.buckets[i]
+        with self.buckets_lock:
+            i = self.get_bucket_ind(key)
+            bucket = self.buckets[i]
         debug(f'[bucketlist] Index:{i} Bucket:{bucket}.')
         return bucket
 
@@ -72,9 +73,8 @@ class BucketList:
             yield contact
 
     def get_closest(self, key) -> list:
-        self.buckets_lock.acquire()
-        index = self.get_bucket_ind(key)
-        self.buckets_lock.release()
+        with self.buckets_lock:
+            index = self.get_bucket_ind(key)
         debug(f'[bucketlist] id:{key}, (id)bucket-index:{index}')
 
         left_bucks = self.buckets[:index]
@@ -127,4 +127,12 @@ class BucketList:
         res = None
         with self.buckets_lock:
             res = self.buckets[i]
+        return res
+
+    def get_all_contacts(self):
+        res = []
+        with self.buckets_lock:
+            for b in self.buckets:
+                if b:
+                    res.extend(b.contacts)
         return res

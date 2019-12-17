@@ -19,44 +19,53 @@ from ..utils.network import (
     Udp_Message,
     Udp_Response,
     WhoCanServeMe,
-    Get_Broadcast_Ip
+    Get_Broadcast_Ip,
 )
 from io import BytesIO
 from random import randint
+from rpyc import connect_by_service, discover
+from rpyc.utils.factory import DiscoveryError
+from engine.utils.logger import setup_logger, debug, info, error
+from time import monotonic
+from engine.utils.network import retry
 
+setup_logger(name='MessageResolver')
 # Funcionamiento del Router:
 # Hilo1 busca un listado de mq (similar al cliente) y pide un request y lo encola en una lista si esta esta vacia (ojo, semaforo)
 # Hilo2 desencola el request si existe , lo procesa y se conecta finalmente con el cliente con el resultado final
 
-class Message_Resolver:
-    def __init__(self ,ip ,mask, brd_port=10001, thread_count = 1, db_port=10002):
+
+class MessageResolver:
+    def __init__(self, ip, mask, brd_port=10001, thread_count=1, db_port=10002):
         # mutex
         self.servers = []
         self.mutex = Semaphore()
-        self.Broadcast_Address = Get_Broadcast_Ip(ip,mask)
+        self.Broadcast_Address = Get_Broadcast_Ip(ip, mask)
         self.Broadcast_Port = brd_port
         self.sm_ip = None
         self.bd_port = db_port
         self.thread_count = thread_count
 
     def start(self):
-        searcher = Thread(target=self._searcher,daemon=True,name="recieve")
+        searcher = Thread(target=self._searcher, daemon=True, name="recieve")
         Thread(target=self._discover_server, daemon=True).start()
         for i in range(0, self.thread_count):
-            Thread(target=self._worker,daemon=True,name="worker" + str(i)).start()
+            Thread(target=self._worker, daemon=True, name="worker" + str(i)).start()
         searcher.start()
         searcher.join()
-    
+
     def _searcher(self):
         print('Searcher initiated')
-        WhoCanServeMe(self.Broadcast_Address, self.Broadcast_Port, self.servers, self.mutex, 10)
+        WhoCanServeMe(
+            self.Broadcast_Address, self.Broadcast_Port, self.servers, self.mutex, 10
+        )
 
     def _discover_server(self):
         print('Discover Initiated')
         with socket(type=SOCK_DGRAM) as sock:
             sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
             sock.bind(('', 10003))
-            while(True):
+            while True:
                 msg, addr = sock.recvfrom(1024)
                 post = Decode_Response(msg)
                 print(post, addr)
@@ -99,12 +108,23 @@ class Message_Resolver:
                     # Pedido desde un productor
                     elif 'post' in req:
 
-                        #Mandar el update a la bd1
-                        #Mandar el update a la bd2
-                        #TODO MANDAR EL POST AL AMS
-                        Tcp_Message(req,self.sm_ip,self.bd_port)
-                        print('UPDATE SENDED')
+                            # Mandar el update a la bd1
+                            # Mandar el update a la bd2
+                            self._post_service_am(req)
+                            Tcp_Message(req, self.sm_ip, self.bd_port)
+                            print('UPDATE SENDED')
             else:
                 self.mutex.release()
                 print(self.sm_ip, self.servers)
             sleep(2)
+
+    @retry(1, times=3, message='Trying to publish in Agent Manager.')
+    def _post_service_am(self, req):
+        debug(f'Preparing to send {req} to store (AM).')
+        c = connect_by_service('AgentManager', config={'timeout': 10})
+        res = c.root.add_agent(Encode_Request(req))
+        if not res:
+            error(f'Agent not stored.')
+            return False
+        debug(f'Agent stored successfully.')
+        return True

@@ -36,20 +36,51 @@ class KademliaProtocol(Service):
         b=DefaultBSize,
         k=DefaultKSize,
         a=DefaultAlfaSize,
+        t_expire = 8
     ):
         super(KademliaProtocol, self).__init__()
         self.k, self.b, self.a = k, b, a
-        self.lock = Lock()
         self.db = {}
         self.db_lock = Lock()
         self.initialized = False
         self.started = False
         self.bucket_list: BucketList
         self.contact: Contact
-    
-    @property
-    def service_name(self):
-        return self.__class__.__name__.split('Service')[0]
+
+        def threaded_expire():
+            entries_to_remove = set()
+            while True:
+                if not self.db or not self.started:
+                    sleep(t_expire)
+                    continue
+                debug(f'[Expiration] Collector begins')
+                with self.db_lock:
+                    debug(f'[Expiration]db-before:{self.db}\nto_remove:{entries_to_remove}')
+                    for k,tup in list(self.db.items()):
+                        if (k,tup) in entries_to_remove:
+                            del self.db[k]
+                    entries_to_remove = set((k,tup) for k,tup in self.db.items())
+                    debug(f'[Expiration]db-after:{self.db}')
+                debug(f'[Expiration] Sleep: {t_expire}')
+                sleep(t_expire)
+
+
+        Thread(target=threaded_expire).start()
+
+    def exposed_update_network(self):
+        if not self.initialized:
+            error(f'Node not initialized')
+        service_name = KademliaProtocol.service_name(self.__class__)
+        nodes = discover(service_name)
+        for node in nodes:
+            tcontact = Contact(*node)
+            debug(f'Pinging to node: {tcontact}')
+            result, _ = self.do_ping(tcontact)
+            debug(('Successfull' if result else 'Unsuccessfull') + f' ping to node: {tcontact}')
+
+    @staticmethod
+    def service_name(cls):
+        return cls.__name__.split('Service')[0]
 
     # region RemoteCall functions
     def exposed_init(self, contact):
@@ -75,12 +106,12 @@ class KademliaProtocol(Service):
                 if not self.initialized:
                     raise Exception(f'KademliaProtocol initializing has fail.')
                 try:
-                    debug(f'Searching for {self.service_name} RPyC Service.')
-                    nodes = discover(self.service_name)
+                    debug(f'Searching for {KademliaProtocol.service_name(self.__class__)} RPyC Service.')
+                    nodes = discover(KademliaProtocol.service_name(self.__class__))
                     debug(f'Finded: {nodes}.')
                 except DiscoveryError as e:
-                    error(f'Service:{self.service_name} not found - {e}.')
-                    raise DiscoveryError(f'Service:{self.service_name} not found - {e}.')
+                    error(f'Service:{KademliaProtocol.service_name(self.__class__)} not found - {e}.')
+                    raise DiscoveryError(f'Service:{KademliaProtocol.service_name(self.__class__)} not found - {e}.')
                 _any = 0
                 for ip,port in nodes:
                     if ip == self.contact.ip and port == self.contact.port:
@@ -91,10 +122,9 @@ class KademliaProtocol(Service):
                             conn = connect(ip, port)
                             debug(f'Connection established with ({ip}:{port}), attemp: {count}.')
                             resp = conn.root.ping(self.contact.to_json())
-                            debug(f'<PING> to ({ip}:{port}) response: {resp}.')
+                            debug(f'<PING> to ({ip}:{port}) response: ({resp})-{("Ping" if resp else "No ping")} responding.')
                             if resp:
                                 contact = Contact.from_json(resp)
-                                debug(f'Connection established with ({ip}:{port}).')
                                 break
                             else:
                                 error(f'Bad Response resul({resp}) from ({ip}:{port}).')
@@ -148,8 +178,9 @@ class KademliaProtocol(Service):
         return self.contact.to_json()
 
     def exposed_store(self, sender: Contact, key: int, value: str, store_time):
+        # with self.db_lock:
         debug(
-            f'Storing ({key},{value}) at time {store_time}.'
+            f'Storing ({key},{value}) at time {store_time}.\ndb:{self.db}'
         )
         if not self.initialized:
             error(f'Node not initialized.')
@@ -159,6 +190,7 @@ class KademliaProtocol(Service):
             sender = Contact.from_json(sender)
             self.update_contacts(sender)
         try:
+            debug(f'db_lock.acquire() {self.db_lock.locked()}')
             self.db_lock.acquire()
             stored_value, time = self.db[key]
         except KeyError:
@@ -166,11 +198,11 @@ class KademliaProtocol(Service):
         self.db[key] = (
             (value, store_time) if time < store_time else (stored_value, time)
         )
-        debug(f'Store at this node: ({key},{value}) at time {store_time}.')
-        self.export(key, (value, store_time))
         debug(f'Stored at this node: ({key},{value}) at time {store_time}.')
+        debug('db_lock.release()')
         self.db_lock.release()
-        # debug(f'Finish with {sender}.')
+        self.export()
+        debug(f'Finish with store requested by {sender}.')
         return True
 
     def exposed_find_value(self, sender: Contact, key: int):
@@ -181,12 +213,15 @@ class KademliaProtocol(Service):
         self.update_contacts(sender)
         debug(f'Requested by {sender}.')
         try:
+            debug(f'db_lock.acquire() {self.db_lock.locked()}')
             self.db_lock.acquire()
             value, store_time = self.db[key]
             debug(f'Found key:{key}, value:{value}.')
+            debug('db_lock.release()')
             self.db_lock.release()
             return value, store_time
         except KeyError:
+            debug('db_lock.release()')
             self.db_lock.release()
             debug(f'Key({key}) not found.')
             return None
@@ -199,13 +234,12 @@ class KademliaProtocol(Service):
         self.update_contacts(sender)
         debug(f'Requested by {sender}.')
         result = []
-        with self.bucket_list.buckets_lock:
-            for c in self.bucket_list.get_closest(key):
-                result.append(c.to_json())
-                if len(result) >= self.k:
-                    break
+        for c in self.bucket_list.get_closest(key):
+            result.append(c.to_json())
+            if len(result) >= self.k:
+                break
         debug(
-            f'Sended {len(result)} contacts to {sender}.'
+            f'Sended {len(result)} contacts to {sender}.\n{result}'
         )
         return result
 
@@ -283,7 +317,7 @@ class KademliaProtocol(Service):
                 f'do_store_value to {cont} of {key}:({value},{store_time}).'
             )
             if not self.do_store_value(cont, key, value, store_time)[0]:
-                error(f'Unable to connect to {cont}.')
+                error(f'Unable to connect to (kclosest) iteration {cont}.')
             else:
                 success += 1
         return success != 0
@@ -375,7 +409,7 @@ class KademliaProtocol(Service):
                 debug(
                     f'Update value key({key}) to {most_recent_value}.'
                 )
-        debug(f'Search key({key}) in contacts.')
+        debug(f'Search key({key}) in contacts({contacts}).')
         for contact_finded in contacts:
             if not self.do_ping(contact_finded)[0]:
                 debug(f'Unable to connect to {contact_finded}.')
@@ -403,26 +437,26 @@ class KademliaProtocol(Service):
         debug(f'do_find_node to contact:{contact}.')
         success, contacts = self.do_find_node(contact.to_json(), key)
         if not success:
-            debug(f'Unable to connect to {contact}.')
+            debug(f'Unable to connect to (do_find_node fail) {contact}.')
             return
-        debug(f'Connected to {contact}.')
+        debug(f'Connected to (do_find_node succes) {contact}.')
         self.update_contacts(contact)
         contacts = map(Contact.from_json, contacts)
         debug(f'Peers to search: {list(contacts)}.')
         for contact_finded in contacts:
             if contact_finded == self.contact:
                 continue
-            debug(f'Pinging to {contact_finded}.')
+            debug(f'Pinging to (contacts finded bucle) {contact_finded}.')
             if not self.do_ping(contact_finded)[0]:
                 debug(
-                    f'Unable to connect to {contact_finded}.'
+                    f'Unable to connect to (contacts finded bucle) {contact_finded}.'
                 )
                 continue
             self.update_contacts(contact_finded)
             lock.acquire()
             if not contact_finded in visited:
                 debug(
-                    f'Adding {contact_finded} to pendings.'
+                    f'Adding (contacts finded bucle) {contact_finded} to pendings.'
                 )
                 visited.add(contact_finded)
                 queue.put(contact_finded)
@@ -468,22 +502,29 @@ class KademliaProtocol(Service):
         debug(f'trying to connect to {contact}.')
         try:
             connection = connect(contact.ip, contact.port, config={'timeout':1})
-            debug(f'Doing ping to:{contact}')
+            debug(f'Pinging (from rpyc_connection) to :{contact}')
             connection.ping()
         except Exception as e:
             error(e)
         debug(f'Connected to contact:{contact}')
         return connection
 
-    def export(self, key, val_time_tupl):
-        with open(f'log/data_{key}.txt', 'w') as f:
-            dump({key: val_time_tupl}, f, indent=True)
+    def export(self):
+        debug(f'db_lock.acquire() {self.db_lock.locked()}')
+        self.db_lock.acquire()
+        with open(f'log/data.txt', 'w') as f:
+            dump(self.db, f, indent=True)
+        debug(f'db_lock.release()')
+        self.db_lock.release()
 
     # region Do functions
     @retry(1, 1, message='do_ping(retry) :: Fail to connect')
     def do_ping(self, to_reciever: Contact):
+        result = None
         if to_reciever == self.contact:
-            return None
+            debug(f'Pinging to myself.')
+            return self.exposed_ping(to_reciever) 
+
         debug(f'Node not initialized.')
         con = self.connect_to(to_reciever)
         debug(f'Trying to ping to contact:{to_reciever}')
@@ -491,38 +532,59 @@ class KademliaProtocol(Service):
         con.close()
         return result
 
-    @retry(1, 1, message='do_store(retry) :: Fail to connect')
+    @retry(1, 1, message='do_store_value(retry) :: Fail to connect')
     def do_store_value(self, to_reciever: Contact, key, value, store_time):
+        result = None
         if to_reciever == self.contact:
-            return self.exposed_store(None, int(key), str(value), store_time)
-
-        con = self.connect_to(to_reciever)
-        debug(f'Trying to store to contact:{to_reciever}')
-        result = con.root.store(
-            self.contact.to_json(), int(key), str(value), store_time
-        )
+            debug(f'Storing in myself {key}:({value},{store_time}).')
+            return self.exposed_store(self.contact.to_json(), int(key), str(value), store_time)
+        try:
+            con = self.connect_to(to_reciever)
+        
+            debug(f'Trying to store to contact:{to_reciever}')
+            result = con.root.store(
+                self.contact.to_json(), int(key), str(value), store_time
+            )
+        except Exception as e:
+            error(f'Has stopped because {e}')
+            con.close()
+            return False
         con.close()
+        debug(f'Successfully stored at contact: {to_reciever} result: {result}')
         return result
 
     @retry(1, 1, message='do_find_node(retry) :: Fail to connect')
     def do_find_node(self, to_reciever: Contact, key):
+        result = None
         if to_reciever == self.contact:
-            return []
-
-        con = self.connect_to(to_reciever)
-        debug(f'Trying to find node to contact:{to_reciever}')
-        result = con.root.find_node(self.contact.to_json(), int(key))
+            debug(f'Find_node in myself {key}.')
+            return self.exposed_find_node(self.contact.to_json(), key)
+        try:
+            con = self.connect_to(to_reciever)
+            debug(f'Trying to find node to contact:{to_reciever}')
+            result = con.root.find_node(self.contact.to_json(), int(key))
+        except Exception as e:
+            error(f'Has stopped because {e}')
+            con.close()
+            return False
         con.close()
+        debug(f'Successfully find node with contact: {to_reciever} result: {result}')
         return result
 
     @retry(1, 1, message='do_find_value(retry) :: Fail to connect')
     def do_find_value(self, to_reciever: Contact, key):
+        result = None
         if to_reciever == self.contact:
-            return None
-
-        con = self.connect_to(to_reciever)
-        debug(f'Trying to find value to contact:{to_reciever}')
-        result = con.root.find_value(self.contact.to_json(), int(key))
+            debug(f'Find_value in myself {key}.')
+            return self.exposed_find_value(self.contact.to_json(), key)
+        try:
+            con = self.connect_to(to_reciever)
+            debug(f'Trying to find value to contact:{to_reciever}')
+            result = con.root.find_value(self.contact.to_json(), int(key))
+        except Exception as e:
+            error(f'Has stopped because {e}')
+            con.close()
+            return False
         con.close()
         return result
     # endregion
@@ -533,8 +595,7 @@ class KademliaProtocol(Service):
             return
         if not self.bucket_list.add_contact(contact):
             # bucket full
-            with self.bucket_list.buckets_lock:
-                bucket = self.bucket_list.get_bucket(contact.id)
+            bucket = self.bucket_list.get_bucket(contact.id)
             bucket.lock.acquire()
             for cont in bucket:
                 if not self.do_ping(cont):

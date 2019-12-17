@@ -13,16 +13,18 @@ from logging import (
     root,
     FileHandler,
 )
+from time import asctime
 
 
 def setup_logger(name='', logfile='', level=DEBUG):
     root.name = name or 'root'
+    a = asctime()
 
     basicConfig(
         filename=f'log/debug_{logfile or name}.log',
         filemode='w',
         level=level,
-        format='%(asctime)+1s %(levelname)-6s- %(name)+18s: \'%(funcName)s\' %(message)s',
+        format='%(asctime)+1s %(levelname)-6s- %(name)+18s: %(funcName)-15s - %(message)s',
         datefmt='%H:%M:%S',
     )
 

@@ -15,6 +15,7 @@ from time import sleep
 from random import randint
 from socket import socket, AF_INET, SOCK_DGRAM, gethostbyname, gethostname
 from kademlia.contact import Contact
+from engine.utils.network import Decode_Response
 
 setup_logger(name='AgentManager')
 
@@ -32,18 +33,53 @@ class AgentManager(KademliaProtocol):
             with the identifier id taken from addr\n
             `id=Hash(addr)`
         '''
+        try:
+            _addr = Decode_Response(addr)
+            _addr = (_addr['ip'], _addr['port'])
+            hs = get_hash(addr=_addr)
+        except Exception as e:
+            error(f'Bad Request:{addr} error: {e}')
+            return False
+        return self.exposed_iter_find_value(hs)
 
     def exposed_add_agent(self, agent_info, store_time):
         ''' 
             Store the (id, (agent_info, store_time)) in the network.\n
             `id=Hash(agent_info.addr)`
         '''
+        debug(f'Processing petition post: {agent_info}')
+        agent_info = Decode_Response(agent_info)
+        if not (
+            'ip' in agent_info and 'port' in agent_info and isinstance(store_time, int)
+        ):
+            error(f'Bad request: {agent_info}')
+            return False
+        hs = get_hash(ip=agent_info['ip'], port=agent_info['port'])
+        return self.exposed_iter_store(hs, agent_info, store_time)
 
     def exposed_all(self):
         ''' Gives all records (most recently ones) '''
+        if not self.started:
+            error('Node not started.')
+            return []
+        records = {}
+
+        with self.db_lock:
+            for k, vt in self.db.items():
+                records[k] = (
+                    vt
+                    if records.get(k) is None or records[k][1] < vt[1]
+                    else records[k]
+                )
+        return list(records.values())
+
+    def exposed_all_nodes(self):
+        ''' Gives all nodes in the node bucket list '''
+        pass
 
     # endregion
-    def __register_server_starter(self):
+    @staticmethod
+    def __register_server_starter():
         while True:
             server = None
             try:
@@ -55,13 +91,14 @@ class AgentManager(KademliaProtocol):
                 debug(f'Registration server not started because {e}')
                 sleep(4)
 
-    def __service_starter(self, port: int):
+    @staticmethod
+    def __service_starter(cls, port: int):
         while True:
             server = None
             try:
                 debug('Creating instace of ThreadedServer')
                 server = ThreadedServer(
-                    self.__class__(),
+                    cls(),
                     port=port,
                     registrar=UDPRegistryClient(),
                     protocol_config={'allow_public_attrs': True},
@@ -76,11 +113,12 @@ class AgentManager(KademliaProtocol):
                     server.close()
                 sleep(0.2)
 
-    def get_ip(self):
+    @staticmethod
+    def get_ip():
         ip = None
         try:
             debug('Discover peers to obtain ip.')
-            peers = discover(self.service_name)
+            peers = discover(AgentManager.service_name(AgentManager))
             debug(f'Peers encountred: {peers}')
             if not peers:
                 raise Exception('No peer was discovered.')
@@ -97,29 +135,34 @@ class AgentManager(KademliaProtocol):
             ip = gethostbyname(gethostname())
         return ip
 
-    def start(self, port=None, port_range=(10000, 10100), first_node=False):
-        ''' Conect to the kademlia network, and wait for rpc\'s '''
+    @staticmethod
+    def start(port=None, port_range=(10000, 10100), first_node=False):
+        ''' Connect to the kademlia network, and wait for rpc\'s '''
         print('look in logs ;)...')
         if port is None:
             port = randint(*port_range)
         info(f'Starting on port {port}')
         debug(f'Start tread for start register server.')
-        thread_server = Thread(target=self.__register_server_starter)
+        thread_server = Thread(target=AgentManager.__register_server_starter)
         thread_server.start()
         sleep(3)
         debug('Start tread for start service.')
-        thread_service = Thread(target=self.__service_starter, args=(port,))
+        thread_service = Thread(
+            target=AgentManager.__service_starter, args=(AgentManager, port)
+        )
         thread_service.start()
         sleep(3)
 
-        ip = self.get_ip()
+        ip = AgentManager.get_ip()
         contact = Contact(ip, port)
         assert contact.id == get_hash(
             (ip, port)
         ), f'Calculated hash not correct. -> {contact.id} == {get_hash((ip, port))}'
         while True:
             try:
-                debug(f'Trying to connect to service {self.service_name}')
+                debug(
+                    f'Trying to connect to service {AgentManager.service_name(AgentManager)}'
+                )
                 c = connect(ip, port, config={'sync_request_timeout': 1000000})
                 res = c.ping()
                 debug(f'Ping to ({ip}:{port}) res({res})')
