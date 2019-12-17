@@ -6,6 +6,5 @@ test*.py
 Test/
 main.py
 .vscode/*
-Templates
 log/*.log
 log/*.txt

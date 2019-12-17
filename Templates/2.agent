@@ -1,0 +1,5 @@
+ip: 10.6.143.3
+port: 80
+url: http://www.uh.cu
+protocol: "TCP"
+service: "UH"
