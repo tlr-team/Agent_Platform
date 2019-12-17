@@ -59,9 +59,9 @@ class KademliaProtocol(Service):
 
         # self.__expire_thread = Thread(target=)
 
-    @property
-    def service_name(self):
-        return self.__class__.__name__.split('Service')[0]
+    @staticmethod
+    def service_name(cls):
+        return cls.__name__.split('Service')[0]
 
     # region RemoteCall functions
     def exposed_init(self, contact):
@@ -87,12 +87,12 @@ class KademliaProtocol(Service):
                 if not self.initialized:
                     raise Exception(f'KademliaProtocol initializing has fail.')
                 try:
-                    debug(f'Searching for {self.service_name} RPyC Service.')
-                    nodes = discover(self.service_name)
+                    debug(f'Searching for {KademliaProtocol.service_name(KademliaProtocol)} RPyC Service.')
+                    nodes = discover(KademliaProtocol.service_name(KademliaProtocol))
                     debug(f'Finded: {nodes}.')
                 except DiscoveryError as e:
-                    error(f'Service:{self.service_name} not found - {e}.')
-                    raise DiscoveryError(f'Service:{self.service_name} not found - {e}.')
+                    error(f'Service:{KademliaProtocol.service_name(KademliaProtocol)} not found - {e}.')
+                    raise DiscoveryError(f'Service:{KademliaProtocol.service_name(KademliaProtocol)} not found - {e}.')
                 _any = 0
                 for ip,port in nodes:
                     if ip == self.contact.ip and port == self.contact.port:
@@ -391,7 +391,7 @@ class KademliaProtocol(Service):
                 debug(
                     f'Update value key({key}) to {most_recent_value}.'
                 )
-        debug(f'Search key({key}) in contacts.')
+        debug(f'Search key({key}) in contacts({contacts}).')
         for contact_finded in contacts:
             if not self.do_ping(contact_finded)[0]:
                 debug(f'Unable to connect to {contact_finded}.')

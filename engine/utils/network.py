@@ -192,7 +192,15 @@ def ServerTcp(
             Thread(target=client_fucntion, args=(client, addr), daemon=True).start()
 
 
-def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=None, Thread_Serve = True):
+def ServerUdp(
+    ip,
+    port,
+    client_fucntion,
+    logger,
+    Stop_Condition=False,
+    objeto=None,
+    Thread_Serve=True,
+):
     with socket(type=SOCK_DGRAM) as sock:
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
         sock.bind((ip, port))
@@ -200,29 +208,33 @@ def ServerUdp(ip, port, client_fucntion, logger, Stop_Condition=False, objeto=No
             if objeto and Stop_Condition(objeto):
                 break
             msg, addr = sock.recvfrom(1024)
-            #logger.debug(f'Recieved UDP Connection from {addr} to {port}')
+            # logger.debug(f'Recieved UDP Connection from {addr} to {port}')
             if Thread_Serve:
-                Thread(target=client_fucntion,args=(msg,addr),daemon=True).start()
+                Thread(target=client_fucntion, args=(msg, addr), daemon=True).start()
             else:
-                client_fucntion(msg,addr)
+                client_fucntion(msg, addr)
 
 
-def WhoCanServeMe(broadcast_addr, port, data_container, lock, timetosleep = 5):
-    while(True):
+def WhoCanServeMe(broadcast_addr, port, data_container, lock, timetosleep=5):
+    while True:
         WhoCanServeMe_request(broadcast_addr, port, data_container, lock)
         sleep(timetosleep)
 
+
 def WhoCanServeMe_request(broadcast_addr, port, data_container, lock):
-    answer = Send_Broadcast_Message({'WHOCANSERVEME':''}, broadcast_addr, port, WhoCanServeMe_Response)
+    answer = Send_Broadcast_Message(
+        {'WHOCANSERVEME': ''}, broadcast_addr, port, WhoCanServeMe_Response
+    )
     for i in answer:
         if 'ME' in i:
             with lock:
                 data_container.update([a[0] for a in answer])
 
+
 def WhoCanServeMe_Response(sock):
     lista = []
     try:
-        while(True):
+        while True:
             lista.append(sock.revfrom(1024))
     except:
         return lista
