@@ -50,6 +50,7 @@ class PlatformInterface:
         extension='.agent',
         port=PLATAFORM_PORT,
         publish_time=20,
+        publisher=True
     ):
         self.ip = ip
         self.mask = mask
@@ -62,7 +63,8 @@ class PlatformInterface:
         self.write_lock = Lock()
         Thread(target=self.__discover_server, daemon=True).start()
         Thread(target=self.__get_attenders, daemon=True).start()
-        Thread(target=self._publish, daemon=True).start()
+        if publisher:
+            Thread(target=self._publish, daemon=True).start()
         Thread(target=self._dns_update, daemon=True).start()
 
     def register_agent(self, ip, port, url, protocol, name):
