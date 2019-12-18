@@ -20,12 +20,13 @@ class SimpleDataBase:
             if not tag in self.dbs:
                 self.dbs[tag] = [(agent,6)]
             else:
-                if not agent in self.dbs[tag][0]:
-                    self.dbs[tag].append((agent,6))
+                for i,val in enumerate(self.dbs[tag]):
+                    if agent in val:
+                        self.dbs[tag][i] = (agent,6)
+                        break
                 else:
-                    for i,val in enumerate(self.dbs[tag]):
-                        if agent in val:
-                            self.dbs[tag][i] = (agent,6)
+                    self.dbs[tag].append((agent,6))
+                    
 
     def _get(self,tag):
         '''
@@ -59,3 +60,16 @@ class SimpleDataBase:
         '''
         self.dbs = {}
 
+    def _dbrefresh(self):
+        '''
+        Resfresca el estado de todos los registros en la bd
+        '''
+        with self.lock:
+            newdb = {}
+            for key in self.dbs:
+                for tup in self.dbs[key]:
+                    if tup[1] > 0:
+                        if not key in newdb:
+                            newdb[key] = []
+                        newdb[key].append((tup[0],tup[1]-1))
+ 

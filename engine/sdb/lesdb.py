@@ -150,6 +150,13 @@ class LESDB(DbLeader, SharedDataBase):
                 except:
                     pass
 
+    def _refresh_db(self):
+        while(True):
+            if self.im_leader:
+                break
+            self._dbrefresh()
+            sleep(self.refresh_time)
+
     def serve(self,time):
         Thread(target=self._serve,daemon=True,name='Discover Server Daemon').start()
         Thread(target=self._check_leader,daemon = True, name='Leader Election Daemon').start()
@@ -173,6 +180,7 @@ class LESDB(DbLeader, SharedDataBase):
                 self.logger.debug('Im Worker Now')
                 #thread_list.append(Thread(target=ServerTcp,args=(self.ip,self.dbport,self._process_request, self.logger, lambda x: x.im_leader, self)))
                 thread_list.append(Process(target=Worker_Process,args=(self.ip,self.dbport, self._process_request, validate, self.leader_dhared_memory, self.leaderprocesslock)))
+                thread_list.append(Thread(target=self._refresh_db, daemon=True, name='DB Refresh'))
 
             for i in thread_list:
                 i.start()
@@ -185,6 +193,7 @@ def Worker_Process(ip, port, function, shared_memory_func, shared_memory, lock):
     logger = getLogger()
     logger.debug(f'Worker Server Initieted at {ip},{port}')
     Thread(target=ServerTcp,args=(ip, port, function, logger, shared_memory_func, shared_memory, lock),daemon=True, name='Server').start()
+    #Thread()
     while(True):
         if shared_memory_func(shared_memory, lock):
             logger.debug(f'Worker Job Ended')
