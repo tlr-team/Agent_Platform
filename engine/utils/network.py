@@ -180,16 +180,20 @@ def ServerTcp(
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
         sock.bind((ip, port))
         sock.listen(10)
+        sock.settimeout(5)
         while True:
-            if objeto and (
-                Stop_Condition(objeto) if not lock else Stop_Condition(objeto, lock)
-            ):
-                logger.info("NO server anymore")
-                break
-            # print("Condicion TCP: ", Stop_Condition(objeto) if objeto != None else None)
-            client, addr = sock.accept()
-            logger.debug(f'Recieved TCP Connection from {addr}')
-            Thread(target=client_fucntion, args=(client, addr), daemon=True).start()
+            try:
+                if objeto and (
+                    Stop_Condition(objeto) if not lock else Stop_Condition(objeto, lock)
+                ):
+                    logger.info("NO server anymore")
+                    break
+                # print("Condicion TCP: ", Stop_Condition(objeto) if objeto != None else None)
+                client, addr = sock.accept()
+                logger.debug(f'Recieved TCP Connection from {addr}')
+                Thread(target=client_fucntion, args=(client, addr), daemon=True).start()
+            except:
+                pass
 
 
 def ServerUdp(
