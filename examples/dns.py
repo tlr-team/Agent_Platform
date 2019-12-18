@@ -33,6 +33,6 @@ class DNS_SEARCHER(PlatformInterface):
         return do_query(domain, QT_A, target['ip'], target['port'])
 
 
-dns = DNS_SEARCHER('10.6.98.226', 24)
-# print(dns.Get_Service_List())
+dns = DNS_SEARCHER('10.6.98.230', 24)
+print(dns.Get_Service_List())
 print(dns.DNS_Query('www.google.com'))
