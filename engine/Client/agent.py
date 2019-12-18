@@ -32,13 +32,13 @@ PLATAFORM_PORT = 10000
 
 
 class PlatformInterface:
-    def __init__(self , ip=None, mask=None, path='../Templates', extension='.agent'):
+    def __init__(self , ip=None, mask=None, path='../Templates', extension='.agent', port=PLATAFORM_PORT, publish_time=10):
         self.ip = ip
         self.mask = mask
         self.path = path
         self.extension = extension
-    
-        #
+        self.connection_port = port
+        self.agent_publish_time = publish_time
         self.attenders_list = []
         self.attenders_list_lock = Lock()
         Thread(target=self.__discover_server, daemon=True).start()
@@ -138,11 +138,6 @@ class PlatformInterface:
                         with self.attenders_list_lock:
                             self.attenders_list.pop(index)
             sleep(self.agent_publish_time)
-    
-
-def check_folder(path='../Templates'):
-    if not path.exists(path):
-        makedirs(path)
 
     def __discover_server(self):
         with socket(type=SOCK_DGRAM) as sock:
@@ -155,3 +150,10 @@ def check_folder(path='../Templates'):
                     with self.attenders_list_lock:
                         if not addr[0] in self.attenders_list:
                             self.attenders_list.append(addr[0])
+
+    
+
+def check_folder(path='../Templates'):
+    if not path.exists(path):
+        makedirs(path)
+
