@@ -58,12 +58,13 @@ class DbLeader(Leader_Election):
                 self.node_count += 1
 
     def _check_deadones(self, lista):
-        for _,val in self.database.items():
-            for j in range(0,2):
-                with self.deadlock:
-                    if val[j] and val[j] not in lista and val[j] not in self.deadlist:
-                        self.dbleaderlogger.debug(f'IP LOST {val[j]}')
-                        self.deadlist.append(val[j])
+        with self.dblock:
+            for _,val in self.database.items():
+                for j in range(0,2):
+                    with self.deadlock:
+                        if val[j] and val[j] not in lista and val[j] not in self.deadlist:
+                            self.dbleaderlogger.debug(f'IP LOST {val[j]}')
+                            self.deadlist.append(val[j])
 
 
 
