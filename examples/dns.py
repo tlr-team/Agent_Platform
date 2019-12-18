@@ -14,21 +14,17 @@ class DNS_SEARCHER(PlatformInterface):
         self.register_agent('8.8.8.8',53,'',1,"DNS")
 
     def Get_Service_List(self):
-        result = self.get_service_list(10)
+        result = self.get_service_list()
         while not result:
-            print(f'Reintentando')
-            result = self.get_service_list(10)
+            result = self.get_service_list()
         return result
 
     def DNS_Query(self, domain):
-        target = self.get_agent('DNS',15)
+        target = self.get_agent('DNS',10)
         while not target:
-            print('Reintentando')
-            target = self.get_agent('DNS', 15)
-        print(target)
-        sleep(3)
+            target = self.get_agent
         return do_query(domain, QT_A, target['ip'], target['port'])
 
 dns = DNS_SEARCHER('10.6.98.230', 24)
-#print(dns.Get_Service_List())
+print(dns.Get_Service_List())
 print(dns.DNS_Query('www.google.com'))
