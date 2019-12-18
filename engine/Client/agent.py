@@ -25,8 +25,16 @@ from os import path, makedirs, remove
 from threading import Lock
 from engine.utils.logger import setup_logger, debug, error, info
 from json import loads
+import os
 
-setup_logger(name='PlatformInterface')
+def check_folder(path='../Templates'):
+    if not os.path.exists(path):
+        makedirs(path)
+
+
+check_folder(path='./log')
+setup_logger(name='PlatformInterface', )
+
 
 
 PLATAFORM_PORT = 10000
@@ -40,7 +48,7 @@ class PlatformInterface:
         path='../Templates',
         extension='.agent',
         port=PLATAFORM_PORT,
-        publish_time=10,
+        publish_time=20,
     ):
         self.ip = ip
         self.mask = mask
@@ -50,8 +58,10 @@ class PlatformInterface:
         self.agent_publish_time = publish_time
         self.attenders_list = []
         self.attenders_list_lock = Lock()
+        self.write_lock = Lock()
         Thread(target=self.__discover_server, daemon=True).start()
         Thread(target=self.__get_attenders, daemon=True).start()
+        Thread(target=self._publish, daemon=True).start()
 
     def register_agent(self, ip, port, url, protocol, name):
         '''
@@ -59,7 +69,7 @@ class PlatformInterface:
         '''
 
         check_folder()
-        name = sha1(
+        name1 = sha1(
             (str(ip) + str(port) + str(url) + str(protocol) + str(name)).encode()
         ).hexdigest()
         dicc = {
@@ -69,9 +79,9 @@ class PlatformInterface:
             'protocol': 'UDP' if protocol else 'TCP',
             'service': name,
         }
-
-        with open(self.path + '/' + name, 'w') as file:
-            dump(dicc, file)
+        with self.write_lock:
+            with open(self.path + '/' + name1 + self.extension, 'w') as file:
+                dump(dicc, file)
 
     def delete_agent(self, ip, port, url, protocol, name):
         '''
@@ -82,7 +92,7 @@ class PlatformInterface:
         name = sha1(
             (str(ip) + str(port) + str(url) + str(protocol) + str(name)).encode()
         ).hexdigest()
-        remove(self.path + '/' + name)
+        remove(self.path + '/' + name + self.extension)
 
     def get_service_list(self, timeout=5):
         '''
@@ -106,7 +116,7 @@ class PlatformInterface:
             error(f'Unhandled Exception: {e}')
             return []
 
-    def get_agent(self, service, timeout=5):
+    def get_agent(self, service, timeout=15):
         '''
         Obtener un agente que cumple un servicio descrito en la plataforma
 
@@ -121,8 +131,11 @@ class PlatformInterface:
                     self.attenders_list[index],
                     PLATAFORM_PORT,
                     Udp_Response,
+                    timeout
                 )
-            return loads(agent_list[randint(0, len(agent_list) - 1)])
+            if agent_list:
+                return agent_list[randint(0, len(agent_list) - 1)]
+            return {}
         except Exception as e:
             error(f'Unhandled Exception: {e}')
             return {}
@@ -135,17 +148,19 @@ class PlatformInterface:
         # Listado de agentes en la carpeta de configuracion
         agents = []
 
-        for agent_config in agent_directory.iterdir():
-            if agent_config.suffix == self.extension:
-                with agent_config.open() as config:
-                    # cada planilla esta en formato yaml
-                    agents.append(load(config, FullLoader))
+        with self.write_lock:
+            for agent_config in agent_directory.iterdir():
+                if agent_config.suffix == self.extension:
+                    with agent_config.open() as config:
+                        # cada planilla esta en formato yaml
+                        agents.append(load(config, FullLoader))
 
         return agents
 
     def _publish(self):
         while True:
             self.template_list = self._load_templates()
+            debug(self.template_list)
             for service in self.template_list:
                 self.attenders_list_lock.acquire()
                 if len(self.attenders_list):
@@ -171,10 +186,12 @@ class PlatformInterface:
             sock.bind(('', 10004))
             while True:
                 msg, addr = sock.recvfrom(1024)
+                debug(f'MESSAGE FROM {addr}')
                 post = Decode_Response(msg)
                 if 'ME' in post:
                     with self.attenders_list_lock:
                         if not addr[0] in self.attenders_list:
+                            debug(f'ATTENDER LIST UPDATED!!!!!')
                             self.attenders_list.append(addr[0])
 
     def __get_attenders(self):
@@ -193,7 +210,5 @@ class PlatformInterface:
             sleep(4)
 
 
-def check_folder(path='../Templates'):
-    if not path.exists(path):
-        makedirs(path)
+
 

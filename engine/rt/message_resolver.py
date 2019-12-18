@@ -118,7 +118,7 @@ class MessageResolver:
             else:
                 self.mutex.release()
                 print(self.sm_ip, self.servers)
-            sleep(2)
+            sleep(0.5)
 
     @retry(1, times=3, message='Trying to publish in Agent Manager.')
     def _post_service_am(self, req):
