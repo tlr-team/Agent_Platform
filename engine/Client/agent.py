@@ -59,13 +59,23 @@ class PlatformInterface:
             error(f'Unhandled Exception: {e}')
             return []
 
-    def get_agent(self, service, timeout = 5):
+    def get_agent(self, service, timeout=5):
         '''
         Obtener un agente que cumple un servicio descrito en la plataforma
 
         Devuelve una descripción de un agente de ser posible, None EOC
         '''
-        pass
-
-
-
+        try:
+            agent_list = []
+            with self.attenders_list_lock:
+                index = randint(0, len(self.attenders_list) - 1)
+                agent_list = Udp_Message(
+                    {'get': service},
+                    self.attenders_list[index],
+                    PLATAFORM_PORT,
+                    Udp_Response,
+                )
+            return loads(agent_list[randint(0, len(agent_list) - 1)])
+        except Exception as e:
+            error(f'Unhandled Exception: {e}')
+            return {}
