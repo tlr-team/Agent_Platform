@@ -213,12 +213,15 @@ class PlatformInterface:
 
     def _dns_update(self):
         while(True):
-            for i in ['m1.lragentplatform.grs.uh.cu', 'm2.lragetnplatform.grs.uh.cu']
+            for i in ['m1.lragentplatform.grs.uh.cu', 'm2.lragetnplatform.grs.uh.cu']:
                 try:
                     ip = gethostbyname(i)
                     with self.attenders_list_lock:
                         if not ip in self.attenders_list:
                             self.attenders_list.append(ip)
+                except Exception as e:
+                    error(f'Fallo al resolver nombre de dominio')
+                    error(e)
             sleep(4)
 
 
