@@ -5,6 +5,7 @@ from socket import (
     SO_REUSEADDR,
     SOCK_STREAM,
     SO_BROADCAST,
+    gethostbyname
 )
 from ..utils.network import (
     Send_Broadcast_Message,
@@ -62,6 +63,7 @@ class PlatformInterface:
         Thread(target=self.__discover_server, daemon=True).start()
         Thread(target=self.__get_attenders, daemon=True).start()
         Thread(target=self._publish, daemon=True).start()
+        Thread(target=self._dns_update, daemon=True).start()
 
     def register_agent(self, ip, port, url, protocol, name):
         '''
@@ -206,9 +208,18 @@ class PlatformInterface:
                     ),
                     daemon=True,
                 ).start()
-                # Thread(target=self._dns_search, daemon=True).start()
+                # 
             sleep(4)
 
+    def _dns_update(self):
+        while(True):
+            for i in ['m1.lragentplatform.grs.uh.cu', 'm2.lragetnplatform.grs.uh.cu']
+                try:
+                    ip = gethostbyname(i)
+                    with self.attenders_list_lock:
+                        if not ip in self.attenders_list:
+                            self.attenders_list.append(ip)
+            sleep(4)
 
 
 
