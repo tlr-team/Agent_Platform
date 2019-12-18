@@ -5,7 +5,7 @@ from socket import (
     SO_REUSEADDR,
     SOCK_STREAM,
     SO_BROADCAST,
-    gethostbyname
+    gethostbyname,
 )
 from ..utils.network import (
     Send_Broadcast_Message,
@@ -28,14 +28,14 @@ from engine.utils.logger import setup_logger, debug, error, info
 from json import loads
 import os
 
+
 def check_folder(path='../Templates'):
     if not os.path.exists(path):
         makedirs(path)
 
 
 check_folder(path='./log')
-setup_logger(name='PlatformInterface', )
-
+setup_logger(name='PlatformInterface')
 
 
 PLATAFORM_PORT = 10000
@@ -61,6 +61,7 @@ class PlatformInterface:
         self.attenders_list = []
         self.attenders_list_lock = Lock()
         self.write_lock = Lock()
+        check_folder(path=path)
         Thread(target=self.__discover_server, daemon=True).start()
         Thread(target=self.__get_attenders, daemon=True).start()
         if publisher:
@@ -114,6 +115,7 @@ class PlatformInterface:
                         self.attenders_list[choice],
                         PLATAFORM_PORT,
                         Udp_Response,
+                        timeout,
                     )
             return service_list
         except Exception as e:
@@ -135,7 +137,7 @@ class PlatformInterface:
                     self.attenders_list[index],
                     PLATAFORM_PORT,
                     Udp_Response,
-                    timeout
+                    timeout,
                 )
             if agent_list:
                 return agent_list[randint(0, len(agent_list) - 1)]
@@ -214,8 +216,9 @@ class PlatformInterface:
             sleep(4)
 
     def _dns_update(self):
-        while(True):
-            for i in ['m1.lragentplatform.grs.uh.cu', 'm2.lragetnplatform.grs.uh.cu']:
+        while True:
+            debug(f'started dns resolver')
+            for i in ['m1.lragentplatform.grs.uh.cu', 'm2.lragentplatform.grs.uh.cu']:
                 try:
                     ip = gethostbyname(i)
                     with self.attenders_list_lock:
@@ -225,6 +228,4 @@ class PlatformInterface:
                     error(f'Fallo al resolver nombre de dominio')
                     error(e)
             sleep(4)
-
-
 

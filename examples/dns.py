@@ -1,10 +1,12 @@
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from engine.Client.agent import PlatformInterface
 from time import sleep
 from sol import do_query, QT_A
+
 
 class DNS_SEARCHER(PlatformInterface):
     def __init__(self,ip, mask, publisher=True):
