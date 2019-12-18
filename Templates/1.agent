@@ -1,0 +1,5 @@
+ip: 10.6.98.3
+port: 53
+url:
+protocol: "UDP"
+service: "DNS"

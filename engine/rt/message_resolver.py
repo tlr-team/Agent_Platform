@@ -80,49 +80,51 @@ class MessageResolver:
 
     def _worker(self):
         print('Worker Intiated')
-        while(True):
+        while True:
             self.mutex.acquire()
-                #TODO LEO AQUIIIIIIIIIII
+            # TODO LEO AQUIIIIIIIIIII
             if len(self.servers) and self.sm_ip:
                 choice = self.servers[randint(0, len(self.servers) - 1)]
                 self.mutex.release()
-                req = Udp_Message({'get':''}, choice, self.Broadcast_Port , Udp_Response, 3)
+                req = Udp_Message(
+                    {'get': ''}, choice, self.Broadcast_Port, Udp_Response, 3
+                )
                 print(f'Recieved {req} from {choice}')
                 if req:
                     if "get" in req:
                         ip = req["ip"]
                         port = req["port"]
                         info = req["get"]
-                        msg = {"get":info}
+                        msg = {"get": info}
                         response = None
                         if info == "full_list":
-                            #TODO FULL LIST
-                            #response = Tcp_Message(msg,self.am_ip,self.bd_port)
+                            # TODO FULL LIST
+                            # response = Tcp_Message(msg,self.am_ip,self.bd_port)
                             print('FULL LIST SENDED')
                         else:
-                            response = Tcp_Message(msg,self.sm_ip,self.bd_port)
-                        #Enviar la respuesta
-                        Udp_Message(response,ip,port)
+                            response = Tcp_Message(msg, self.sm_ip, self.bd_port)
+                        # Enviar la respuesta
+                        Udp_Message(response, ip, port)
                         print(response, f'SENDED TO {ip},{port}')
-                        
+
                     # Pedido desde un productor
                     elif 'post' in req:
 
-                            # Mandar el update a la bd1
-                            # Mandar el update a la bd2
-                            self._post_service_am(req)
-                            Tcp_Message(req, self.sm_ip, self.bd_port)
-                            print('UPDATE SENDED')
+                        # Mandar el update a la bd1
+                        # Mandar el update a la bd2
+                        self._post_service_am(req)
+                        Tcp_Message(req, self.sm_ip, self.bd_port)
+                        print('UPDATE SENDED')
             else:
                 self.mutex.release()
                 print(self.sm_ip, self.servers)
-            sleep(2)
+            sleep(0.5)
 
     @retry(1, times=3, message='Trying to publish in Agent Manager.')
     def _post_service_am(self, req):
         debug(f'Preparing to send {req} to store (AM).')
         c = connect_by_service('AgentManager', config={'timeout': 10})
-        res = c.root.add_agent(Encode_Request(req))
+        res = c.root.add_agent(Encode_Request(req), monotonic())
         if not res:
             error(f'Agent not stored.')
             return False

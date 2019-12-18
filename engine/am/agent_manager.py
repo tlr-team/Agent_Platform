@@ -49,11 +49,9 @@ class AgentManager(KademliaProtocol):
         '''
         debug(f'Processing petition post: {agent_info}')
         agent_info = Decode_Response(agent_info)
-        if not (
-            'ip' in agent_info and 'port' in agent_info and isinstance(store_time, int)
-        ):
-            error(f'Bad request: {agent_info}')
-            return False
+        # if not ip in agent_info or not agent_info.get('port'):
+        #     error(f'Bad request: {agent_info}')
+        #     return False
         hs = get_hash(ip=agent_info['ip'], port=agent_info['port'])
         return self.exposed_iter_store(hs, agent_info, store_time)
 
