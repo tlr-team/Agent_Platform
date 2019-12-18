@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 from engine.Client.agent import PlatformInterface
 from time import sleep
+from sol import *
 
 a = PlatformInterface('10.6.98.230',mask=24)
 lista = a.get_service_list()
@@ -17,4 +18,10 @@ while(True):
     if i > 1:
         break
 
-print(a.get_agent('DNS' ,timeout=10))
+target = a.get_agent('DNS' ,timeout=10)
+print(target)
+
+if target:
+    response = do_query('www.google.com', QT_A, target['ip'], target['port'])
+
+print(response)
