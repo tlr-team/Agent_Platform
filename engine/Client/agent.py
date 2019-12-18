@@ -33,7 +33,15 @@ PLATAFORM_PORT = 10000
 
 
 class PlatformInterface:
-    def __init__(self , ip=None, mask=None, path='../Templates', extension='.agent', port=PLATAFORM_PORT, publish_time=10):
+    def __init__(
+        self,
+        ip=None,
+        mask=None,
+        path='../Templates',
+        extension='.agent',
+        port=PLATAFORM_PORT,
+        publish_time=10,
+    ):
         self.ip = ip
         self.mask = mask
         self.path = path
@@ -51,8 +59,16 @@ class PlatformInterface:
         '''
 
         check_folder()
-        name = sha1((str(ip) + str(port) + str(url) + str(protocol) + str(name)).encode()).hexdigest()
-        dicc = {'ip': ip, 'port': port, 'url': url, 'protocol': 'UDP' if protocol else 'TCP', 'service': name}
+        name = sha1(
+            (str(ip) + str(port) + str(url) + str(protocol) + str(name)).encode()
+        ).hexdigest()
+        dicc = {
+            'ip': ip,
+            'port': port,
+            'url': url,
+            'protocol': 'UDP' if protocol else 'TCP',
+            'service': name,
+        }
 
         with open(self.path + '/' + name, 'w') as file:
             dump(dicc, file)
@@ -63,7 +79,9 @@ class PlatformInterface:
         '''
 
         check_folder()
-        name = sha1((str(ip) + str(port) + str(url) + str(protocol) + str(name)).encode()).hexdigest()
+        name = sha1(
+            (str(ip) + str(port) + str(url) + str(protocol) + str(name)).encode()
+        ).hexdigest()
         remove(self.path + '/' + name)
 
     def get_service_list(self, timeout=5):
@@ -126,15 +144,21 @@ class PlatformInterface:
         return agents
 
     def _publish(self):
-        while(True):
+        while True:
             self.template_list = self._load_templates()
             for service in self.template_list:
                 self.attenders_list_lock.acquire()
                 if len(self.attenders_list):
-                    index = randint(0, len(self.attenders_list)-1)
+                    index = randint(0, len(self.attenders_list) - 1)
                     choice = self.attenders_list[index]
                     self.attenders_list_lock.release()
-                    msg = {'post': service['service'], 'ip':service['ip'], 'port': service['port'], 'url' : service['url'], 'protocol': service['protocol']}
+                    msg = {
+                        'post': service['service'],
+                        'ip': service['ip'],
+                        'port': service['port'],
+                        'url': service['url'],
+                        'protocol': service['protocol'],
+                    }
                     ans = Udp_Message(msg, choice, self.connection_port)
                     if not ans:
                         with self.attenders_list_lock:
@@ -167,9 +191,7 @@ class PlatformInterface:
                 ).start()
                 # Thread(target=self._dns_search, daemon=True).start()
             sleep(4)
-                            self.attenders_list.append(addr[0])
 
-    
 
 def check_folder(path='../Templates'):
     if not path.exists(path):
