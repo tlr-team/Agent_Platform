@@ -19,12 +19,25 @@ from pathlib import Path
 from yaml import load, FullLoader
 from time import sleep
 from random import randint
+from threading import Lock
+from engine.utils.logger import setup_logger, debug, error, info
+from json import loads
+
+setup_logger(name='PlatformInterface')
+
+
+PLATAFORM_PORT = 10000
+
 
 class PlatformInterface:
-    def __init__(self , ip=None, mask=None):
+    def __init__(self, ip=None, mask=None):
         self.ip = ip
         self.mask = mask
-    
+        #
+        self.attenders_list = []
+        self.attenders_list_lock = Lock()
+        Thread(target=self.__discover_server, daemon=True).start()
+
     def register_agent(self, ip, port, url, protocol, name):
         '''
         Publicar Un Agente a la Plataforma
@@ -79,3 +92,15 @@ class PlatformInterface:
         except Exception as e:
             error(f'Unhandled Exception: {e}')
             return {}
+
+    def __discover_server(self):
+        with socket(type=SOCK_DGRAM) as sock:
+            sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
+            sock.bind(('', 10004))
+            while True:
+                msg, addr = sock.recvfrom(1024)
+                post = Decode_Response(msg)
+                if 'ME' in post:
+                    with self.attenders_list_lock:
+                        if not addr[0] in self.attenders_list:
+                            self.attenders_list.append(addr[0])
