@@ -37,13 +37,27 @@ class PlatformInterface:
         '''
         pass
 
-    def get_service_list(self, timeout = 5):
+    def get_service_list(self, timeout=5):
         '''
         Obtener listado de servicios disponibles en la plataforma
 
         Devuelve una lista de strings si es posible conectar, None EOC
         '''
-        pass
+        try:
+            service_list = []
+            if len(self.attenders_list):
+                with self.attenders_list_lock:
+                    choice = randint(0, len(self.attenders_list) - 1)
+                    service_list = Udp_Message(
+                        {'get': 'list'},
+                        self.attenders_list[choice],
+                        PLATAFORM_PORT,
+                        Udp_Response,
+                    )
+            return service_list
+        except Exception as e:
+            error(f'Unhandled Exception: {e}')
+            return []
 
     def get_agent(self, service, timeout = 5):
         '''
