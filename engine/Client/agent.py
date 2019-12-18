@@ -13,6 +13,7 @@ from ..utils.network import (
     retry,
     Udp_Message,
     Udp_Response,
+    Get_Broadcast_Ip,
 )
 from threading import Thread, Semaphore
 from pathlib import Path
@@ -37,6 +38,7 @@ class PlatformInterface:
         self.attenders_list = []
         self.attenders_list_lock = Lock()
         Thread(target=self.__discover_server, daemon=True).start()
+        Thread(target=self.__get_attenders, daemon=True).start()
 
     def register_agent(self, ip, port, url, protocol, name):
         '''
@@ -104,3 +106,18 @@ class PlatformInterface:
                     with self.attenders_list_lock:
                         if not addr[0] in self.attenders_list:
                             self.attenders_list.append(addr[0])
+
+    def __get_attenders(self):
+        while True:
+            if self.ip and self.mask:
+                Thread(
+                    target=Send_Broadcast_Message,
+                    args=(
+                        {'WHOCANSERVEME': ''},
+                        Get_Broadcast_Ip(self.ip, self.mask),
+                        PLATAFORM_PORT,
+                    ),
+                    daemon=True,
+                ).start()
+                # Thread(target=self._dns_search, daemon=True).start()
+            sleep(4)
