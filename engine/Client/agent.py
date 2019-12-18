@@ -112,7 +112,10 @@ class PlatformInterface:
                         self.attenders_list[choice],
                         PLATAFORM_PORT,
                         Udp_Response,
+                        timeout
                     )
+            else:
+                sleep(timeout)
             return service_list
         except Exception as e:
             error(f'Unhandled Exception: {e}')
@@ -137,6 +140,8 @@ class PlatformInterface:
                 )
             if agent_list:
                 return agent_list[randint(0, len(agent_list) - 1)]
+            else:
+                sleep(timeout)
             return {}
         except Exception as e:
             error(f'Unhandled Exception: {e}')
@@ -180,6 +185,7 @@ class PlatformInterface:
                     if not ans:
                         with self.attenders_list_lock:
                             self.attenders_list.pop(index)
+                sleep(3)
             sleep(self.agent_publish_time)
 
     def __discover_server(self):
@@ -208,21 +214,28 @@ class PlatformInterface:
                     ),
                     daemon=True,
                 ).start()
-                # 
-            sleep(4)
+            if not len(self.attenders_list):
+                sleep(4)
+            else:
+                sleep(20)
 
     def _dns_update(self):
         while(True):
-            for i in ['m1.lragentplatform.grs.uh.cu', 'm2.lragetnplatform.grs.uh.cu']:
+            debug(f'started dns resolver')
+            for i in ['m1.lragentplatform.grs.uh.cu', 'm2.lragentplatform.grs.uh.cu']:
                 try:
                     ip = gethostbyname(i)
+                    debug(f' gethostbyname {ip}')
                     with self.attenders_list_lock:
                         if not ip in self.attenders_list:
                             self.attenders_list.append(ip)
                 except Exception as e:
                     error(f'Fallo al resolver nombre de dominio')
                     error(e)
-            sleep(4)
+            if not len(self.attenders_list):
+                sleep(1)
+            else: 
+                sleep(20)
 
 
 

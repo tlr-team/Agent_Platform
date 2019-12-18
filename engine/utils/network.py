@@ -218,7 +218,10 @@ def ServerUdp(
 def WhoCanServeMe(broadcast_addr, port, data_container, lock, timetosleep=5):
     while True:
         WhoCanServeMe_request(broadcast_addr, port, data_container, lock)
-        sleep(timetosleep)
+        if not len(data_container):
+            sleep(1)
+        else:
+            sleep(timetosleep)
 
 
 def WhoCanServeMe_request(broadcast_addr, port, data_container, lock):

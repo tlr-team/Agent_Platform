@@ -57,7 +57,7 @@ class MessageResolver:
     def _searcher(self):
         print('Searcher initiated')
         WhoCanServeMe(
-            self.Broadcast_Address, self.Broadcast_Port, self.servers, self.mutex, 10
+            self.Broadcast_Address, self.Broadcast_Port, self.servers, self.mutex, 20
         )
 
     def _discover_server(self):
