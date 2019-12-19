@@ -110,6 +110,7 @@ class MessageResolver:
 
                     elif 'info' in req:
                         msg = {'info':'', 'ip':req['ip'], 'port':req['port'] }
+                        #TODO LEO CAMBIA EL TCP MESSAGE PARA INTERACTUAR CON LA DHT
                         response = Tcp_Message({msg, self.sm_ip, self.bd_port)
                         Udp_Message(response, ip, port)
                         debug(response, f'SENDED TO {ip},{port}')
