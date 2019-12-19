@@ -2,7 +2,7 @@ from rpyc import Service, connect
 from inspect import isfunction, getfullargspec
 from rpyc.utils.server import ThreadedServer
 from threading import Thread, Lock
-from engine.utils.logger import setup_logger
+from engine.utils.logger import setup_logger, debug, error, info
 from engine.utils.network import Udp_Message, Send_Broadcast_Message, Get_Broadcast_Ip
 from socket import socket, SO_REUSEADDR, SOL_SOCKET, SOCK_DGRAM
 
@@ -37,6 +37,42 @@ class AgentService(rpyc.Service):
             error(e)
         return connection
 
+    def execute(self, service_name, func_name, *args):
+        ''' 
+            With a given service name and function name
+            search for the available agents and execute 
+            the function `func_name` in one of those agents. 
+        '''
+        debug(f'trying to execute in some agent with service: {service_name} the function named: {func_name}({args})')
+        while True:
+            try:
+                agents = self._get_service(service_name)
+                break
+            except Exception as e:
+                error(f'exception:{e}')
+            debug('retrying to get_service')
+            sleep(0,5)
+        info(f'available agents: {agents}')
+        while agents:
+            try:
+                cur_agent = agents.pop()
+                _info = self._agent_info(cur_agent['ip'], cur_agent['port'])
+                debug(f'trying with ,{cur_agent}, info: {_info}')
+                if func_name in _info and (_info.get('args', None)) == len(args):
+                    c = self._connect_to(cur_agent['ip'], cur_agent['port'])
+                    if c!= None:
+                        try:
+                            res = c.root.__getattr__(func_name)(*args)
+                            debug(f'Remote function call was executed with result: {res}')
+                            return res
+                        except Exception as e:
+                            error(f'Remote function call interrupted because: {e}')
+                            continue
+            except:
+                if agents:
+                    debug('Trying with another agent')
+        debug('the remote function could not be executed')
+        return None
     
     @staticmethod
     def _service_name(cls):
