@@ -100,7 +100,7 @@ class AgentService(Service):
         debug('the remote function could not be executed')
         return None
 
-    @staticmethod
+    @classmethod
     def _service_name(cls):
         return cls.__name__.split('Service')[0]
 
@@ -120,8 +120,8 @@ class AgentService(Service):
         return funcs_exposed
 
     def _publish_service(self):
-        method_info = AgentService._get_exposed_info()
-        service = AgentService._service_name(self.__class__)
+        method_info = self._get_exposed_info()
+        service = self._service_name()
         info(
             f'\n>Methods info: {method_info},\n>Service:      {service},\n>addr:         {self.ip}:{self.port}'
         )
