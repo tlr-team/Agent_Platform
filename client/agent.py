@@ -65,7 +65,7 @@ class AgentService(Service):
                 retry -= 1
         return connection
 
-    def execute(self, service_name, func_name, *args):
+    def execute(self, service_name, func_name, *args, retry=0):
         ''' 
             With a given service name and function name
             search for the available agents and execute 
@@ -90,22 +90,33 @@ class AgentService(Service):
                 error(f'remote function call interrupted because: {e}')
         # Execution not resolved with cached connections,
         # now going to try it with another agent.
-        while True:
+        _retry = retry
+        # search for agents with the specific Service
+        while retry >= 0:
             try:
                 agents = self._get_service(service_name)
                 break
             except Exception as e:
                 error(f'exception:{e}')
             debug('retrying to get_service')
-            sleep(0, 5)
+            sleep(0.5)
+            retry -= 1
+
         info(f'available agents: {agents}')
+
+        # Search between the availables agents
+        # to execute
         while agents:
             try:
                 cur_agent = agents.pop()
                 _info = self._agent_info(cur_agent['ip'], cur_agent['port'])
                 debug(f'trying with ,{cur_agent}, info: {_info}')
-                if func_name in _info and (_info.get('args', None)) == len(args):
-                    c = self._connect_to((cur_agent['ip'], cur_agent['port']))
+
+                if func_name in _info and len(_info.get('args', None)) == len(args):
+                    # the current agent has the needed function
+                    c = self._connect_to(
+                        (cur_agent['ip'], cur_agent['port']), retry=_retry
+                    )
                     if c != None:
                         try:
                             res = getattr(c.root, func_name)(*args)
@@ -117,8 +128,8 @@ class AgentService(Service):
                         except Exception as e:
                             error(f'remote function call interrupted because: {e}')
                             c.close()
-                            continue
-            except:
+            except Exception as e:
+                error(e)
                 if agents:
                     debug('Trying with another agent')
         debug('the remote function could not be executed')
