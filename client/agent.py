@@ -12,6 +12,7 @@ from time import sleep
 from engine.utils.logger import setup_logger, debug, error, info
 from engine.utils.network import (
     Udp_Message,
+    Udp_Response,
     Send_Broadcast_Message,
     Get_Broadcast_Ip,
     Decode_Response,
@@ -27,6 +28,7 @@ def get_funcargs(func):
     return args[1:] if 'self' == args[0] else args
 
 
+TIMEOUT = 5
 PLATAFORM_PORT = 10000
 
 
@@ -102,7 +104,7 @@ class AgentService(Service):
     def _service_name(cls):
         return cls.__name__.split('Service')[0]
 
-    @staticmethod
+    @classmethod
     def _get_exposed_info(cls):
         funcs_exposed = {}
         for attr_name, attr in cls.__dict__.items():
@@ -118,25 +120,28 @@ class AgentService(Service):
         return funcs_exposed
 
     def _publish_service(self):
-        method_info = AgentService._get_exposed_info(self.__class__)
+        method_info = AgentService._get_exposed_info()
         service = AgentService._service_name(self.__class__)
+        info(
+            f'\n>Methods info: {method_info},\n>Service:      {service},\n>addr:         {self.ip}:{self.port}'
+        )
+        msg = {'post': service, 'ip': self.ip, 'port': self.port, 'info': method_info}
         while True:
-            msg = {
-                'post': service,
-                'ip': self.ip,
-                'port': self.port,
-                'info': method_info,
-            }
-
             self.attenders_list_lock.acquire()
             if len(self.attenders_list):
                 index = randint(0, len(self.attenders_list) - 1)
                 choice = self.attenders_list[index]
+                debug(f'attempting to publish service to {choice[0]}')
                 self.attenders_list_lock.release()
-                ans = Udp_Message(msg, choice, self.port)
-                if not ans:
+                ans = Udp_Message(msg, choice, PLATAFORM_PORT)
+                if ans is None:
+                    debug(f'service not published in {choice}')
                     with self.attenders_list_lock:
                         self.attenders_list.pop(index)
+                else:
+                    debug('service published succesfully')
+            else:
+                info('no attenders available')
             sleep(self.publish_time)
 
     def _refresh_attenders(self):
@@ -145,12 +150,12 @@ class AgentService(Service):
             sock.bind(('', 10004))
             while True:
                 msg, addr = sock.recvfrom(1024)
-                debug(f'MESSAGE FROM {addr}')
+                debug(f'message from {addr}')
                 post = Decode_Response(msg)
                 if 'ME' in post:
                     with self.attenders_list_lock:
                         if not addr[0] in self.attenders_list:
-                            debug(f'ATTENDER LIST UPDATED!!!!! with {addr[0]}')
+                            debug(f'attenders list updated with {addr[0]}')
                             self.attenders_list.append(addr[0])
 
     def _whocanserveme(self):
@@ -186,7 +191,7 @@ class AgentService(Service):
                         self.attenders_list[choice],
                         PLATAFORM_PORT,
                         Udp_Response,
-                        timeout,
+                        TIMEOUT,
                     )
             return service_list
         except Exception as e:
@@ -209,7 +214,7 @@ class AgentService(Service):
                         self.attenders_list[choice],
                         PLATAFORM_PORT,
                         Udp_Response,
-                        timeout,
+                        TIMEOUT,
                     )
             return service_list
         except Exception as e:
@@ -219,12 +224,12 @@ class AgentService(Service):
 
 
 if __name__ == "__main__":
-    server = ThreadedServer(AgentService('localhost', 0, 10001), port=12345)
+    server = ThreadedServer(AgentService('10.6.227.243', 24, 10001), port=12345)
     server.start()
 
     # How to access to a method in remote service
     # a = c.root.__getattr__('iter_find_value')(1)
 
-    print(AgentService._get_exposed_info(AgentService))
+    # print(AgentService._get_exposed_info(AgentService))
     # MyService.__dict__['exposed_sum'])
 
