@@ -15,13 +15,16 @@ def get_funcargs(func):
 
 
 class AgentService(rpyc.Service):
-    def __init__(self ip = None, mask=None, port=None):
+    def __init__(self, ip , mask, port):
         self.ip = ip
         self.mask = mask
         self.port = port
         self.attenders_list = []
         self.attenders_list_lock = Lock()
-
+        Thread(target=self._whocanserveme, daemon=True).start()
+        Thread(target=self._refresh_attenders,daemon=True).start()
+        Thread(target=self._publish_service,daemon=True).start()
+        
     def exposed_sum(self, a, b):
         ''' Suma dos enteros y retorna la suma. '''
         return a + b
@@ -88,8 +91,10 @@ class AgentService(rpyc.Service):
                     ),
                     daemon=True,
                 ).start()
-            sleep(4)
-        pass
+            if len(self.attenders_list):
+                sleep(10)
+            else:
+                sleep(2)
 
 
 if __name__ == "__main__":
