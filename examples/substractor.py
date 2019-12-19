@@ -15,3 +15,7 @@ class Substractor(AgentService):
         Returns the subtraction of two numbers a and b
         '''
         return a - b
+
+
+if __name__ == "__main__":
+    Substractor.start('10.6.98.243', 24, 12345)

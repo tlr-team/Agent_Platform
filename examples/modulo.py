@@ -25,5 +25,5 @@ class Modulo(AgentService):
             return remainder
 
 
-                
-
+if __name__ == "__main__":
+    Modulo.start('10.6.98.243', 24, 12345)
