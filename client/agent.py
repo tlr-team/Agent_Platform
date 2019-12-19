@@ -50,15 +50,19 @@ class AgentService(Service):
         info('executing exposed_sum....')
         return a + b
 
-    def _connect_to(self, addr_ag):
+    def _connect_to(self, addr_ag, retry=0):
         debug(f'trying to establish connection to {addr_ag}.')
-        try:
-            connection = connect(*addr_ag, config={'timeout': 2})
-            debug(f'pinging (with rpyc_connection) to: {addr_ag}')
-            connection.ping()
-            debug(f'connected to agent at: {addr_ag}')
-        except Exception as e:
-            error(e)
+        while retry >= 0:
+            try:
+                connection = connect(*addr_ag, config={'timeout': 2})
+                debug(f'pinging (with rpyc_connection) to: {addr_ag}')
+                connection.ping()
+                debug(f'connected to agent at: {addr_ag}')
+            except Exception as e:
+                error(e)
+                if not connection is None:
+                    connection.close()
+                retry -= 1
         return connection
 
     def execute(self, service_name, func_name, *args):
