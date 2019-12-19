@@ -28,7 +28,7 @@ def get_funcargs(func):
     return args[1:] if 'self' == args[0] else args
 
 
-TIMEOUT = 5
+TIMEOUT = 15
 PLATAFORM_PORT = 10000
 
 
