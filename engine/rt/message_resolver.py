@@ -68,7 +68,7 @@ class MessageResolver:
             while True:
                 msg, addr = sock.recvfrom(1024)
                 post = Decode_Response(msg)
-                debug(post, addr)
+                debug(f'{post}, {addr}')
                 if 'ME' in post:
                     if post['ME'] == 'MQ':
                         with self.mutex:
@@ -98,7 +98,7 @@ class MessageResolver:
                         response = Tcp_Message(msg, self.sm_ip, self.bd_port)
                         # Enviar la respuesta
                         Udp_Message(response, ip, port)
-                        debug(response, f'SENDED TO {ip},{port}')
+                        debug(f'{response}, SENDED TO {ip},{port}')
 
                     # Pedido desde un productor
                     elif 'post' in req:
@@ -110,13 +110,12 @@ class MessageResolver:
 
                     elif 'info' in req:
                         msg = {'info':'', 'ip':req['ip'], 'port':req['port'] }
-                        #TODO LEO CAMBIA EL TCP MESSAGE PARA INTERACTUAR CON LA DHT
-                        response = Tcp_Message({msg, self.sm_ip, self.bd_port)
+                        response = self._get_info(msg)
                         Udp_Message(response, ip, port)
-                        debug(response, f'SENDED TO {ip},{port}')
+                        debug(f'{response}, SENDED TO {ip},{port}')
             else:
                 self.mutex.release()
-                debug(self.sm_ip, self.servers)
+                debug(f'{self.sm_ip}, {self.servers}')
             sleep(0.5)
 
     @retry(1, times=3, message='Trying to publish in Agent Manager.')
@@ -129,3 +128,14 @@ class MessageResolver:
             return False
         debug(f'Agent stored successfully.')
         return True
+
+    @retry(1, times=3, message='Trying get agent info.')
+    def _get_info(self, req):
+        debug(f'Preparing to send {req} to get angent info from (AM).')
+        c = connect_by_service('AgentManager', config={'timeout': 10})
+        res = c.root.get(Encode_Request(req))
+        if not res:
+            error(f'No info from agent.')
+            return {}
+        debug(f'Info retireved sucessfully.')
+        return res
