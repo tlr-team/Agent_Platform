@@ -176,6 +176,7 @@ class AgentService(Service):
                 else:
                     debug('service published succesfully')
             else:
+                self.attenders_list_lock.release()
                 info('no attenders available')
             sleep(self.publish_time)
 

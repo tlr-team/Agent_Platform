@@ -29,7 +29,7 @@ from engine.utils.logger import setup_logger, debug, info, error
 from time import monotonic
 from engine.utils.network import retry
 
-setup_logger(name='MessageResolver')
+setup_logger(name='MessageResolver', to_file=False)
 # Funcionamiento del Router:
 # Hilo1 busca un listado de mq (similar al cliente) y pide un request y lo encola en una lista si esta esta vacia (ojo, semaforo)
 # Hilo2 desencola el request si existe , lo procesa y se conecta finalmente con el cliente con el resultado final
