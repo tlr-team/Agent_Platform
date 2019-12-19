@@ -98,7 +98,7 @@ class MessageResolver:
                         response = Tcp_Message(msg, self.sm_ip, self.bd_port)
                         # Enviar la respuesta
                         Udp_Message(response, ip, port)
-                        debug(response, f'SENDED TO {ip},{port}')
+                        debug(f'{response}, SENDED TO {ip},{port}')
 
                     # Pedido desde un productor
                     elif 'post' in req:
@@ -112,10 +112,10 @@ class MessageResolver:
                         msg = {'info':'', 'ip':req['ip'], 'port':req['port'] }
                         response = self._get_info(msg)
                         Udp_Message(response, ip, port)
-                        debug(response, f'SENDED TO {ip},{port}')
+                        debug(f'{response}, SENDED TO {ip},{port}')
             else:
                 self.mutex.release()
-                debug(self.sm_ip, self.servers)
+                debug(f'{self.sm_ip}, {self.servers}')
             sleep(0.5)
 
     @retry(1, times=3, message='Trying to publish in Agent Manager.')
