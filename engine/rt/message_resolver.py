@@ -55,69 +55,67 @@ class MessageResolver:
         searcher.join()
 
     def _searcher(self):
-        print('Searcher initiated')
+        debug('Searcher initiated')
         WhoCanServeMe(
             self.Broadcast_Address, self.Broadcast_Port, self.servers, self.mutex, 10
         )
 
     def _discover_server(self):
-        print('Discover Initiated')
+        debug('Discover Initiated')
         with socket(type=SOCK_DGRAM) as sock:
             sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, True)
             sock.bind(('', 10003))
             while True:
                 msg, addr = sock.recvfrom(1024)
                 post = Decode_Response(msg)
-                print(post, addr)
+                debug(post, addr)
                 if 'ME' in post:
                     if post['ME'] == 'MQ':
                         with self.mutex:
                             if not addr[0] in self.servers:
-                                print(f'SERVERS UPDATED WITH {addr[0]}')
+                                debug(f'SERVERS UPDATED WITH {addr[0]}')
                                 self.servers.append(addr[0])
                     elif post['ME'] == 'DF':
                         self.sm_ip = addr[0]
 
     def _worker(self):
-        print('Worker Intiated')
+        debug('Worker Intiated')
         while True:
             self.mutex.acquire()
-            # TODO LEO AQUIIIIIIIIIII
             if len(self.servers) and self.sm_ip:
                 choice = self.servers[randint(0, len(self.servers) - 1)]
                 self.mutex.release()
                 req = Udp_Message(
                     {'get': ''}, choice, self.Broadcast_Port, Udp_Response, 3
                 )
-                print(f'Recieved {req} from {choice}')
+                debug(f'Recieved {req} from {choice}')
                 if req:
+                    ip = req["client_ip"]
+                    port = req["client_port"]
                     if "get" in req:
-                        ip = req["ip"]
-                        port = req["port"]
                         info = req["get"]
                         msg = {"get": info}
-                        response = None
-                        if info == "full_list":
-                            # TODO FULL LIST
-                            # response = Tcp_Message(msg,self.am_ip,self.bd_port)
-                            print('FULL LIST SENDED')
-                        else:
-                            response = Tcp_Message(msg, self.sm_ip, self.bd_port)
+                        response = Tcp_Message(msg, self.sm_ip, self.bd_port)
                         # Enviar la respuesta
                         Udp_Message(response, ip, port)
-                        print(response, f'SENDED TO {ip},{port}')
+                        debug(response, f'SENDED TO {ip},{port}')
 
                     # Pedido desde un productor
                     elif 'post' in req:
-
                         # Mandar el update a la bd1
                         # Mandar el update a la bd2
                         self._post_service_am(req)
-                        Tcp_Message(req, self.sm_ip, self.bd_port)
-                        print('UPDATE SENDED')
+                        Tcp_Message({'post': req['post'], 'ip': req['ip'], 'port':req['port']}, self.sm_ip, self.bd_port)
+                        debug('UPDATE SENDED')
+
+                    elif 'info' in req:
+                        msg = {'info':'', 'ip':req['ip'], 'port':req['port'] }
+                        response = Tcp_Message({msg, self.sm_ip, self.bd_port)
+                        Udp_Message(response, ip, port)
+                        debug(response, f'SENDED TO {ip},{port}')
             else:
                 self.mutex.release()
-                print(self.sm_ip, self.servers)
+                debug(self.sm_ip, self.servers)
             sleep(0.5)
 
     @retry(1, times=3, message='Trying to publish in Agent Manager.')
