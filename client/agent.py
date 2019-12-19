@@ -40,12 +40,14 @@ class AgentService(Service):
         self.attenders_list = []
         self.attenders_list_lock = Lock()
         self.publish_time = 6
+        self.cached_connections = {}
         Thread(target=self._whocanserveme, daemon=True).start()
         Thread(target=self._refresh_attenders, daemon=True).start()
         Thread(target=self._publish_service, daemon=True).start()
 
     def exposed_sum(self, a, b):
         ''' Suma dos enteros y retorna la suma. '''
+        info('executing exposed_sum....')
         return a + b
 
     def _connect_to(self, addr_ag):
@@ -66,8 +68,24 @@ class AgentService(Service):
             the function `func_name` in one of those agents. 
         '''
         debug(
-            f'trying to execute in some agent with service: {service_name} the function named: {func_name}({args})'
+            f'trying to execute in some agent\nwith service: {service_name} the function named: {func_name}({args})'
         )
+
+        if f'{service_name}.{func_name}' in self.cached_connections:
+            try:
+                debug(f'using a cached connection for {service_name}.{func_name}.')
+                res = getattr(
+                    self.cached_connections[f'{service_name}.{func_name}'].root,
+                    func_name,
+                )(*args)
+                debug(f'remote function call was executed with result: {res}')
+                return res
+            except Exception as e:
+                self.cached_connections[f'{service_name}.{func_name}'].close()
+                del self.cached_connections[f'{service_name}.{func_name}']
+                error(f'remote function call interrupted because: {e}')
+        # Execution not resolved with cached connections,
+        # now going to try it with another agent.
         while True:
             try:
                 agents = self._get_service(service_name)
@@ -86,13 +104,15 @@ class AgentService(Service):
                     c = self._connect_to((cur_agent['ip'], cur_agent['port']))
                     if c != None:
                         try:
-                            res = c.root.__getattr__(func_name)(*args)
+                            res = getattr(c.root, func_name)(*args)
                             debug(
-                                f'Remote function call was executed with result: {res}'
+                                f'remote function call was executed with result: {res}'
                             )
+                            self.cached_connections[f'{service_name}.{func_name}'] = c
                             return res
                         except Exception as e:
-                            error(f'Remote function call interrupted because: {e}')
+                            error(f'remote function call interrupted because: {e}')
+                            c.close()
                             continue
             except:
                 if agents:
