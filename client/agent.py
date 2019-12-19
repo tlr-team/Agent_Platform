@@ -13,6 +13,7 @@ def get_funcargs(func):
     args = getfullargspec(func).args
     return args[1:] if 'self' == args[0] else args
 
+PLATAFORM_PORT = 10000
 
 class AgentService(rpyc.Service):
     def __init__(self, ip , mask, port):
@@ -49,9 +50,9 @@ class AgentService(rpyc.Service):
         return funcs_exposed
 
     def _publish_service(self):
+        method_info = AgentService._get_exposed_info(self.__class__)
+        service = AgentService.service_name(self.__class__)
         while(True):
-            method_info = AgentService._get_exposed_info(self.__class__)
-            service = AgentService.service_name(self.__class__)
             msg = { 'post': service,  'ip': self.ip,  'port': self.port,  'info': method_info }
 
             self.attenders_list_lock.acquire()
@@ -95,6 +96,53 @@ class AgentService(rpyc.Service):
                 sleep(10)
             else:
                 sleep(2)
+
+    def _get_service(self, service):
+        '''
+        Obtener listado de agentes dado un servicio
+
+        Devuelve una lista de strings si es posible conectar, [] EOC
+        '''
+        try:
+            service_list = []
+            if len(self.attenders_list):
+                with self.attenders_list_lock:
+                    choice = randint(0, len(self.attenders_list) - 1)
+                    service_list = Udp_Message(
+                        {'get': service},
+                        self.attenders_list[choice],
+                        PLATAFORM_PORT,
+                        Udp_Response,
+                        timeout,
+                    )
+            return service_list
+        except Exception as e:
+            error(f'Unhandled Exception: {e}')
+            return []
+
+    def _agent_info(self, ip, port):
+        '''
+        Obtener la información de contacto dado un agente
+
+        Devuelve una diccionario con la info, {} EOC
+        '''
+        try:
+            service_list = {}
+            if len(self.attenders_list):
+                with self.attenders_list_lock:
+                    choice = randint(0, len(self.attenders_list) - 1)
+                    service_list = Udp_Message(
+                        {'info': '', 'ip': ip, 'port': port},
+                        self.attenders_list[choice],
+                        PLATAFORM_PORT,
+                        Udp_Response,
+                        timeout,
+                    )
+            return service_list
+        except Exception as e:
+            error(f'Unhandled Exception: {e}')
+            return {}
+        pass
 
 
 if __name__ == "__main__":
