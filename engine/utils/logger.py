@@ -16,17 +16,18 @@ from logging import (
 from time import asctime
 
 
-def setup_logger(name='', logfile='', level=DEBUG):
+def setup_logger(name='', logfile='', level=DEBUG, to_file=True):
     root.name = name or 'root'
     a = asctime()
+    conf = {
+        'level': level,
+        'format': '%(asctime)+1s %(levelname)-7s- %(name)+18s: %(funcName)-15s - %(message)s',
+        'datefmt': '%H:%M:%S',
+    }
+    if to_file:
+        conf.update({'filename': f'log/debug_{logfile or name}.log', 'filemode': 'w'})
 
-    basicConfig(
-        filename=f'log/debug_{logfile or name}.log',
-        filemode='w',
-        level=level,
-        format='%(asctime)+1s %(levelname)-6s- %(name)+18s: %(funcName)-15s - %(message)s',
-        datefmt='%H:%M:%S',
-    )
+    basicConfig(**conf)
 
 
 def getLogger(name='log', level=DEBUG, to_file=False):
