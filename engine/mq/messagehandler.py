@@ -37,7 +37,7 @@ class MessageHandler:
         self.logger.info(f'arrive: {msg}, from: {addr}')
 
         if 'get' in msg or 'post' in msg:
-            if 'get' in msg:
+            if 'get' in msg or 'info' in msg:
                 msg.update({'client_ip': addr[0], 'client_port': addr[1]})
 
             with self.lock_q:
