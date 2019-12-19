@@ -24,7 +24,7 @@ DefaultKSize = 3  # FIXME: Put a correct value
 DefaultBSize = 160
 DefaultAlfaSize = 1
 
-setup_logger(name='Kademlia')
+setup_logger(name='Kademlia', to_file=True)
 
 class KademliaProtocol(Service):
     '''
