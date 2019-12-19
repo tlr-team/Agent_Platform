@@ -17,7 +17,7 @@ from socket import socket, AF_INET, SOCK_DGRAM, gethostbyname, gethostname
 from kademlia.contact import Contact
 from engine.utils.network import Decode_Response
 
-setup_logger(name='AgentManager')
+setup_logger(name='AgentManager', to_file=True)
 
 
 class AgentManager(KademliaProtocol):
