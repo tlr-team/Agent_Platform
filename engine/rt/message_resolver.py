@@ -111,8 +111,11 @@ class MessageResolver:
                     elif 'info' in req:
                         msg = {'info':'', 'ip':req['ip'], 'port':req['port'] }
                         response = self._get_info(msg)
-                        Udp_Message(response, ip, port)
-                        debug(f'{response}, SENDED TO {ip},{port}')
+                        if response[0]:
+                            Udp_Message(response[1], ip, port)
+                            debug(f'{response}, SENDED TO {ip},{port}')
+                        else:
+                            error('_get_info Failed')
             else:
                 self.mutex.release()
                 debug(f'{self.sm_ip}, {self.servers}')
@@ -134,6 +137,7 @@ class MessageResolver:
         debug(f'Preparing to send {req} to get angent info from (AM).')
         c = connect_by_service('AgentManager', config={'timeout': 10})
         res = c.root.get(Encode_Request(req))
+
         if not res:
             error(f'No info from agent.')
             return {}

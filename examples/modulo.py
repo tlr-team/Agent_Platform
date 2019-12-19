@@ -14,6 +14,7 @@ class Modulo(AgentService):
         '''
             Returns the rest of the division from one number to another number b
         '''
+        print('ARGS',a,b)
         if a < 0 or b <= 0:
             return -1
         elif a < b:
@@ -21,9 +22,10 @@ class Modulo(AgentService):
         else:
             remainder = a
             while remainder > b:
-                remainder = self.execute('Substractor', 'subtract', remainder, b)
+                remainder = self.execute('Substractor', 'subtract', remainder, b, retry=3)
+                print(remainder)
             return remainder
 
 
 if __name__ == "__main__":
-    Modulo.start('10.6.98.243', 24, 12345)
+    Modulo.start('10.6.98.230', 24, 12346)
