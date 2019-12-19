@@ -1,35 +1,51 @@
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from rpyc import Service, connect
 from inspect import isfunction, getfullargspec
 from rpyc.utils.server import ThreadedServer
 from threading import Thread, Lock
+from random import randint
+from time import sleep
 from engine.utils.logger import setup_logger, debug, error, info
-from engine.utils.network import Udp_Message, Send_Broadcast_Message, Get_Broadcast_Ip
+from engine.utils.network import (
+    Udp_Message,
+    Send_Broadcast_Message,
+    Get_Broadcast_Ip,
+    Decode_Response,
+    Encode_Request,
+)
 from socket import socket, SO_REUSEADDR, SOL_SOCKET, SOCK_DGRAM
 
-setup_logger(name='AgentService')
+setup_logger(name='AgentService', to_file=False)
 
 
 def get_funcargs(func):
     args = getfullargspec(func).args
     return args[1:] if 'self' == args[0] else args
 
+
 PLATAFORM_PORT = 10000
 
-class AgentService(rpyc.Service):
-    def __init__(self, ip , mask, port):
+
+class AgentService(Service):
+    def __init__(self, ip, mask, port):
         self.ip = ip
         self.mask = mask
         self.port = port
         self.attenders_list = []
         self.attenders_list_lock = Lock()
+        self.publish_time = 6
         Thread(target=self._whocanserveme, daemon=True).start()
-        Thread(target=self._refresh_attenders,daemon=True).start()
-        Thread(target=self._publish_service,daemon=True).start()
-        
+        Thread(target=self._refresh_attenders, daemon=True).start()
+        Thread(target=self._publish_service, daemon=True).start()
+
     def exposed_sum(self, a, b):
         ''' Suma dos enteros y retorna la suma. '''
         return a + b
-    
+
     def _connect_to(self, addr_ag):
         debug(f'trying to establish connection to {addr_ag}.')
         try:
@@ -47,7 +63,9 @@ class AgentService(rpyc.Service):
             search for the available agents and execute 
             the function `func_name` in one of those agents. 
         '''
-        debug(f'trying to execute in some agent with service: {service_name} the function named: {func_name}({args})')
+        debug(
+            f'trying to execute in some agent with service: {service_name} the function named: {func_name}({args})'
+        )
         while True:
             try:
                 agents = self._get_service(service_name)
@@ -55,7 +73,7 @@ class AgentService(rpyc.Service):
             except Exception as e:
                 error(f'exception:{e}')
             debug('retrying to get_service')
-            sleep(0,5)
+            sleep(0, 5)
         info(f'available agents: {agents}')
         while agents:
             try:
@@ -63,11 +81,13 @@ class AgentService(rpyc.Service):
                 _info = self._agent_info(cur_agent['ip'], cur_agent['port'])
                 debug(f'trying with ,{cur_agent}, info: {_info}')
                 if func_name in _info and (_info.get('args', None)) == len(args):
-                    c = self._connect_to(cur_agent['ip'], cur_agent['port'])
-                    if c!= None:
+                    c = self._connect_to((cur_agent['ip'], cur_agent['port']))
+                    if c != None:
                         try:
                             res = c.root.__getattr__(func_name)(*args)
-                            debug(f'Remote function call was executed with result: {res}')
+                            debug(
+                                f'Remote function call was executed with result: {res}'
+                            )
                             return res
                         except Exception as e:
                             error(f'Remote function call interrupted because: {e}')
@@ -77,7 +97,7 @@ class AgentService(rpyc.Service):
                     debug('Trying with another agent')
         debug('the remote function could not be executed')
         return None
-    
+
     @staticmethod
     def _service_name(cls):
         return cls.__name__.split('Service')[0]
@@ -99,20 +119,25 @@ class AgentService(rpyc.Service):
 
     def _publish_service(self):
         method_info = AgentService._get_exposed_info(self.__class__)
-        service = AgentService.service_name(self.__class__)
-        while(True):
-            msg = { 'post': service,  'ip': self.ip,  'port': self.port,  'info': method_info }
+        service = AgentService._service_name(self.__class__)
+        while True:
+            msg = {
+                'post': service,
+                'ip': self.ip,
+                'port': self.port,
+                'info': method_info,
+            }
 
             self.attenders_list_lock.acquire()
             if len(self.attenders_list):
                 index = randint(0, len(self.attenders_list) - 1)
                 choice = self.attenders_list[index]
-                self.attenders_list_lock.release()    
-                ans = Udp_Message(msg, choice, self.connection_port)
-                    if not ans:
-                        with self.attenders_list_lock:
-                            self.attenders_list.pop(index)
-            sleep(self.agent_publish_time)
+                self.attenders_list_lock.release()
+                ans = Udp_Message(msg, choice, self.port)
+                if not ans:
+                    with self.attenders_list_lock:
+                        self.attenders_list.pop(index)
+            sleep(self.publish_time)
 
     def _refresh_attenders(self):
         with socket(type=SOCK_DGRAM) as sock:
@@ -127,7 +152,7 @@ class AgentService(rpyc.Service):
                         if not addr[0] in self.attenders_list:
                             debug(f'ATTENDER LIST UPDATED!!!!! with {addr[0]}')
                             self.attenders_list.append(addr[0])
-    
+
     def _whocanserveme(self):
         while True:
             if self.ip and self.mask:
@@ -194,8 +219,8 @@ class AgentService(rpyc.Service):
 
 
 if __name__ == "__main__":
-    # server = ThreadedServer(AgentService(), port=12345)
-    # server.start()
+    server = ThreadedServer(AgentService('localhost', 0, 10001), port=12345)
+    server.start()
 
     # How to access to a method in remote service
     # a = c.root.__getattr__('iter_find_value')(1)
