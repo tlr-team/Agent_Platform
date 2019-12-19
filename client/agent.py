@@ -241,18 +241,18 @@ class AgentService(Service):
         Devuelve una diccionario con la info, {} EOC
         '''
         try:
-            service_list = {}
+            agent_info = {}
             if len(self.attenders_list):
                 with self.attenders_list_lock:
                     choice = randint(0, len(self.attenders_list) - 1)
-                    service_list = Udp_Message(
+                    agent_info = Udp_Message(
                         {'info': '', 'ip': ip, 'port': port},
                         self.attenders_list[choice],
                         PLATAFORM_PORT,
                         Udp_Response,
                         TIMEOUT,
                     )
-            return service_list
+            return agent_info
         except Exception as e:
             error(f'Unhandled Exception: {e}')
             return {}
