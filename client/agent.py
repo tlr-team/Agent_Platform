@@ -8,7 +8,8 @@ setup_logger(name='AgentService')
 
 
 def get_funcargs(func):
-    return getfullargspec(func).args
+    args = getfullargspec(func).args
+    return args[1:] if 'self' == args[0] else args
 
 
 class AgentService(rpyc.Service):
