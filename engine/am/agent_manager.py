@@ -17,7 +17,7 @@ from socket import socket, AF_INET, SOCK_DGRAM, gethostbyname, gethostname
 from kademlia.contact import Contact
 from engine.utils.network import Decode_Response
 
-setup_logger(name='AgentManager')
+setup_logger(name='AgentManager', to_file=True)
 
 
 class AgentManager(KademliaProtocol):
@@ -39,8 +39,11 @@ class AgentManager(KademliaProtocol):
             hs = get_hash(addr=_addr)
         except Exception as e:
             error(f'Bad Request:{addr} error: {e}')
-            return False
-        return self.exposed_iter_find_value(hs)
+            return None
+        res = self.exposed_iter_find_value(hs)
+        if not res is None:
+            return res[0]
+        return None
 
     def exposed_add_agent(self, agent_info, store_time):
         ''' 
