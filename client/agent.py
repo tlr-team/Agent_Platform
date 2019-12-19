@@ -109,10 +109,13 @@ class AgentService(Service):
         while agents:
             try:
                 cur_agent = agents.pop()
-                _info = self._agent_info(cur_agent['ip'], cur_agent['port'])
-                debug(f'trying with ,{cur_agent}, info: {_info}')
+                ag_info = self._agent_info(cur_agent['ip'], cur_agent['port'])
+                debug(f'trying with ,{cur_agent}, info: {ag_info}')
+                _info = ag_info['info']
 
-                if func_name in _info and len(_info.get('args', None)) == len(args):
+                if func_name in _info and len(_info[func_name].get('args', [])) == len(
+                    args
+                ):
                     # the current agent has the needed function
                     c = self._connect_to(
                         (cur_agent['ip'], cur_agent['port']), retry=_retry
