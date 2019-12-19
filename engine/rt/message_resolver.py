@@ -82,7 +82,6 @@ class MessageResolver:
         print('Worker Intiated')
         while True:
             self.mutex.acquire()
-            # TODO LEO AQUIIIIIIIIIII
             if len(self.servers) and self.sm_ip:
                 choice = self.servers[randint(0, len(self.servers) - 1)]
                 self.mutex.release()
@@ -91,18 +90,13 @@ class MessageResolver:
                 )
                 print(f'Recieved {req} from {choice}')
                 if req:
-                    if "get" in req:
-                        ip = req["ip"]
-                        port = req["port"]
-                        info = req["get"]
-                        msg = {"get": info}
-                        response = None
-                        if info == "full_list":
-                            # TODO FULL LIST
-                            # response = Tcp_Message(msg,self.am_ip,self.bd_port)
-                            print('FULL LIST SENDED')
-                        else:
-                            response = Tcp_Message(msg, self.sm_ip, self.bd_port)
+                    if "get" in req or 'info' in req:
+                        ip = req["client_ip"]
+                        port = req["client_port"]
+                        if 'get' in req:    
+                            info = req["get"]
+                        msg = {"get": info} if 'get' in req else {'info':'', 'ip':req['ip'], 'port':req['port'] }
+                        response = Tcp_Message(msg, self.sm_ip, self.bd_port)
                         # Enviar la respuesta
                         Udp_Message(response, ip, port)
                         print(response, f'SENDED TO {ip},{port}')
@@ -113,7 +107,7 @@ class MessageResolver:
                         # Mandar el update a la bd1
                         # Mandar el update a la bd2
                         self._post_service_am(req)
-                        Tcp_Message(req, self.sm_ip, self.bd_port)
+                        Tcp_Message({'post': req['post'], 'ip': req['ip'], 'port':req['port']}, self.sm_ip, self.bd_port)
                         print('UPDATE SENDED')
             else:
                 self.mutex.release()
