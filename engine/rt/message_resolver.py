@@ -90,12 +90,11 @@ class MessageResolver:
                 )
                 print(f'Recieved {req} from {choice}')
                 if req:
-                    if "get" in req or 'info' in req:
-                        ip = req["client_ip"]
-                        port = req["client_port"]
-                        if 'get' in req:    
-                            info = req["get"]
-                        msg = {"get": info} if 'get' in req else {'info':'', 'ip':req['ip'], 'port':req['port'] }
+                    ip = req["client_ip"]
+                    port = req["client_port"]
+                    if "get" in req:
+                        info = req["get"]
+                        msg = {"get": info}
                         response = Tcp_Message(msg, self.sm_ip, self.bd_port)
                         # Enviar la respuesta
                         Udp_Message(response, ip, port)
@@ -103,12 +102,17 @@ class MessageResolver:
 
                     # Pedido desde un productor
                     elif 'post' in req:
-
                         # Mandar el update a la bd1
                         # Mandar el update a la bd2
                         self._post_service_am(req)
                         Tcp_Message({'post': req['post'], 'ip': req['ip'], 'port':req['port']}, self.sm_ip, self.bd_port)
                         print('UPDATE SENDED')
+
+                    elif 'info' in req:
+                        msg = {'info':'', 'ip':req['ip'], 'port':req['port'] }
+                        response = Tcp_Message({msg, self.sm_ip, self.bd_port)
+                        Udp_Message(response, ip, port)
+                        print(response, f'SENDED TO {ip},{port}')
             else:
                 self.mutex.release()
                 print(self.sm_ip, self.servers)
