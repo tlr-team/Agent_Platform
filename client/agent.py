@@ -1,4 +1,4 @@
-import rpyc
+from rpyc import Service, connect
 from inspect import isfunction, getfullargspec
 from rpyc.utils.server import ThreadedServer
 from threading import Thread, Lock
@@ -15,7 +15,7 @@ def get_funcargs(func):
 
 
 class AgentService(rpyc.Service):
-    def __init__(self ip = None, mask=None, port=None):
+    def __init__(self, ip = None, mask=None, port=None):
         self.ip = ip
         self.mask = mask
         self.port = port
@@ -25,7 +25,19 @@ class AgentService(rpyc.Service):
     def exposed_sum(self, a, b):
         ''' Suma dos enteros y retorna la suma. '''
         return a + b
+    
+    def _connect_to(self, addr_ag):
+        debug(f'trying to establish connection to {addr_ag}.')
+        try:
+            connection = connect(*addr_ag, config={'timeout': 2})
+            debug(f'pinging (with rpyc_connection) to: {addr_ag}')
+            connection.ping()
+            debug(f'connected to agent at: {addr_ag}')
+        except Exception as e:
+            error(e)
+        return connection
 
+    
     @staticmethod
     def _service_name(cls):
         return cls.__name__.split('Service')[0]
