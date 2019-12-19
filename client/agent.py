@@ -242,11 +242,26 @@ class AgentService(Service):
             return {}
         pass
 
+    @classmethod
+    def start(cls, ip, mask, port):
+        while True:
+            server = None
+            try:
+                debug('creating instace of ThreadedServer')
+                server = ThreadedServer(cls(ip, mask, port), port=port)
+                debug('starting the service')
+                server.start()
+                break
+            except Exception as e:
+                error(f'error starting service Exception: \n{e}\n{e.__traceback__}')
+                debug('sleep a while and retry')
+                if not server is None:
+                    server.close()
+                sleep(0.2)
+
 
 if __name__ == "__main__":
-    server = ThreadedServer(AgentService('10.6.227.243', 24, 10001), port=12345)
-    server.start()
-
+    AgentService.start('10.6.98.243', 24, 12345)
     # How to access to a method in remote service
     # a = c.root.__getattr__('iter_find_value')(1)
 
