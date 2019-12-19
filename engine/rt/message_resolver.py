@@ -68,7 +68,7 @@ class MessageResolver:
             while True:
                 msg, addr = sock.recvfrom(1024)
                 post = Decode_Response(msg)
-                debug(post, addr)
+                debug(f'{post}, {addr}')
                 if 'ME' in post:
                     if post['ME'] == 'MQ':
                         with self.mutex:
@@ -110,7 +110,6 @@ class MessageResolver:
 
                     elif 'info' in req:
                         msg = {'info':'', 'ip':req['ip'], 'port':req['port'] }
-                        #TODO LEO CAMBIA EL TCP MESSAGE PARA INTERACTUAR CON LA DHT
                         response = self._get_info(msg)
                         Udp_Message(response, ip, port)
                         debug(response, f'SENDED TO {ip},{port}')
