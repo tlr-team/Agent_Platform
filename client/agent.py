@@ -65,7 +65,7 @@ class AgentService(Service):
                 retry -= 1
         return connection
 
-    def execute(self, service_name, func_name, *args, retry=0):
+    def execute(self, service_name, func_name, *args, retry=3):
         ''' 
             With a given service name and function name
             search for the available agents and execute 
