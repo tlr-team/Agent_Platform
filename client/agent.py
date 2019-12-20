@@ -76,7 +76,6 @@ class AgentService(Service):
         debug(
             f'trying to execute in some agent\nwith service: {service_name} the function named: {func_name}({args})'
         )
-
         if f'{service_name}.{func_name}' in self.cached_connections:
             try:
                 debug(f'using a cached connection for {service_name}.{func_name}.')
@@ -111,18 +110,24 @@ class AgentService(Service):
         # to execute
         while agents:
             cur_agent = agents.pop()
-            try:
-                ag_info = {}
-                while _retry >= 0 and not ag_info:
+
+            _info = None
+            while _retry >= 0 and _info is None:
+                try:
                     ag_info = self._agent_info(cur_agent['ip'], cur_agent['port'])
                     debug(
                         f'trying with ,{cur_agent}, info: {ag_info}\n({type(ag_info)})'
                     )
-                    _info = ag_info['info']
-                    _retry -= 1
-                if ag_info:
-                    continue
+                    _info = ag_info.get('info')
+                except Exception as e:
+                    error(e)
+                _retry -= 1
+                sleep(0.2)
+            _retry = retry
 
+            if _info is None:
+                continue
+            try:
                 if func_name in _info and len(_info[func_name].get('args', [])) == len(
                     args
                 ):
