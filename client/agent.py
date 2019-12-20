@@ -264,7 +264,8 @@ class AgentService(Service):
                         PLATAFORM_PORT,
                         Udp_Response,
                         TIMEOUT,
-           debug(
+                    )
+            debug(
                 f'_agent_info recieved and formatted: {agent_info}, type({type(agent_info)})'
             )
             return agent_info
