@@ -72,7 +72,16 @@ def Encode_Request(dicc):
 
 # Decodifica la respusta en forma de json a un diccionario python
 def Decode_Response(data):
-    return loads(data)
+    if isinstance(data, bytes):
+        data = data.decode()
+    data = data.replace('\t', '')
+    data = data.replace('\'', '"')
+    data = data.replace('\n', '')
+    data = data.replace(',}', '}')
+    data = data.replace(',]', ']')
+    data = loads(data)
+    print("DECODED-DATA: ", data)
+    return data
 
 
 # Dado un ip en string lo convierte a binario
@@ -163,7 +172,8 @@ def Udp_Message(msg, ip, port, function=Void, timeout=10):
             return function(sock)
         except:
             return None
-        
+
+
 def Udp_Response(socket):
     return Decode_Response(socket.recvfrom(2048)[0])
 
@@ -226,8 +236,10 @@ def WhoCanServeMe(broadcast_addr, port, data_container, lock, timetosleep=5):
 
 
 def WhoCanServeMe_request(broadcast_addr, port, data_container, lock):
-    answer = Send_Broadcast_Message({'WHOCANSERVEME':''}, broadcast_addr, port, WhoCanServeMe_Response)
-    print('answer ',answer)
+    answer = Send_Broadcast_Message(
+        {'WHOCANSERVEME': ''}, broadcast_addr, port, WhoCanServeMe_Response
+    )
+    print('answer ', answer)
     for i in answer:
         if 'ME' in i:
             with lock:
@@ -238,7 +250,7 @@ def WhoCanServeMe_request(broadcast_addr, port, data_container, lock):
 def WhoCanServeMe_Response(sock):
     lista = []
     try:
-        while(True):
+        while True:
             msg, addr = sock.revfrom(1024)
             print(addr)
             print(msg)
