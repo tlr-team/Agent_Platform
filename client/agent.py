@@ -59,6 +59,7 @@ class AgentService(Service):
                 debug(f'pinging (with rpyc_connection) to: {addr_ag}')
                 connection.ping()
                 debug(f'connected to agent at: {addr_ag}')
+                break
             except Exception as e:
                 error(e)
                 if not connection is None:
@@ -93,7 +94,7 @@ class AgentService(Service):
         # now going to try it with another agent.
         _retry = retry
         # search for agents with the specific Service
-        while retry >= 0:
+        while _retry >= 0:
             try:
                 agents = self._get_service(service_name)
                 break
@@ -101,19 +102,26 @@ class AgentService(Service):
                 error(f'exception:{e}')
             debug('retrying to get_service')
             sleep(0.5)
-            retry -= 1
+            _retry -= 1
 
         info(f'available agents: {agents}')
+        _retry = retry
 
         # Search between the availables agents
         # to execute
         while agents:
+            cur_agent = agents.pop()
             try:
-                cur_agent = agents.pop()
-                ag_info = self._agent_info(cur_agent['ip'], cur_agent['port'])
-                debug(f'trying with ,{cur_agent}, info: {ag_info}\n({type(ag_info)})')
-                debug(f'aguacate -->{ag_info}<-->{type(ag_info)}')
-                _info = ag_info['info']
+                ag_info = {}
+                while _retry >= 0 and not ag_info:
+                    ag_info = self._agent_info(cur_agent['ip'], cur_agent['port'])
+                    debug(
+                        f'trying with ,{cur_agent}, info: {ag_info}\n({type(ag_info)})'
+                    )
+                    _info = ag_info['info']
+                    _retry -= 1
+                if ag_info:
+                    continue
 
                 if func_name in _info and len(_info[func_name].get('args', [])) == len(
                     args
@@ -134,7 +142,7 @@ class AgentService(Service):
                             error(f'remote function call interrupted because: {e}')
                             c.close()
             except Exception as e:
-                error(f'error ocurred: {e}')
+                error(f'error ocurred trying with {cur_agent}:\n{e}')
                 if agents:
                     debug('Trying with another agent')
         debug('the remote function could not be executed')
@@ -256,12 +264,9 @@ class AgentService(Service):
                         PLATAFORM_PORT,
                         Udp_Response,
                         TIMEOUT,
-                    )
-            debug(
-                f'agent_info recieved _agent_info: {agent_info}, ({type(agent_info)})'
+           debug(
+                f'_agent_info recieved and formatted: {agent_info}, type({type(agent_info)})'
             )
-            agent_info = Decode_Response(agent_info)
-            debug(f'_agent_info recieved and formatted: {agent_info}')
             return agent_info
         except Exception as e:
             error(f'Unhandled Exception: {e}')
