@@ -34,6 +34,7 @@ class AgentManager(KademliaProtocol):
             `id=Hash(addr)`
         '''
         try:
+            print(f'recieved: \n{addr}\n{type(addr)}')
             _addr = Decode_Response(addr)
             _addr = (_addr['ip'], _addr['port'])
             hs = get_hash(addr=_addr)
@@ -42,6 +43,7 @@ class AgentManager(KademliaProtocol):
             return None
         res = self.exposed_iter_find_value(hs)
         if not res is None:
+            debug(f'to send: \n{res}\n{type(res[0])}')
             return res[0]
         return None
 

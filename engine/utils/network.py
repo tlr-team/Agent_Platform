@@ -13,6 +13,13 @@ from inspect import signature
 from io import BytesIO
 from functools import wraps
 from hashlib import sha1
+from ast import literal_eval
+
+
+def to_json_valid(json_data):
+    assert isinstance(json_data, str)
+    json_data = literal_eval(json_data)
+    return dumps(json_data)
 
 
 def get_hash(addr=None, ip='', port=''):
@@ -71,16 +78,18 @@ def Encode_Request(dicc):
 
 
 # Decodifica la respusta en forma de json a un diccionario python
-def Decode_Response(data):
-    if isinstance(data, bytes):
-        data = data.decode()
-    data = data.replace('\t', '')
-    data = data.replace('\'', '"')
-    data = data.replace('\n', '')
-    data = data.replace(',}', '}')
-    data = data.replace(',]', ']')
-    data = loads(data)
-    print("DECODED-DATA: ", data)
+def Decode_Response(data, deep=2):
+    if deep < 1:
+        return data
+    try:
+        if isinstance(data, bytes):
+            data = data.decode()
+        data = to_json_valid(data)
+        data = loads(data)
+    except Exception as e:
+        print(f'Decode_Response(error): {e}')
+    if isinstance(data, str):
+        return Decode_Response(data, deep=deep - 1)
     return data
 
 
