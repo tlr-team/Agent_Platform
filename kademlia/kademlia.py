@@ -36,7 +36,7 @@ class KademliaProtocol(Service):
         b=DefaultBSize,
         k=DefaultKSize,
         a=DefaultAlfaSize,
-        t_expire = 8,
+        t_expire = 12,
         t_rediscover= 10,
     ):
         super(KademliaProtocol, self).__init__()

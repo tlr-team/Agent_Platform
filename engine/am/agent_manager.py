@@ -38,7 +38,7 @@ class AgentManager(KademliaProtocol):
             _addr = (_addr['ip'], _addr['port'])
             hs = get_hash(addr=_addr)
         except Exception as e:
-            error(f'Bad Request:{addr} error: {e}')
+            error(f'Bad Request: {addr} error: {e}')
             return None
         res = self.exposed_iter_find_value(hs)
         if not res is None:
