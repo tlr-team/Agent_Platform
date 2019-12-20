@@ -34,7 +34,7 @@ class AgentManager(KademliaProtocol):
             `id=Hash(addr)`
         '''
         try:
-            print(f'recieved: \n{addr}\n{type(addr)}')
+            debug(f'recieved: \n{addr}\n{type(addr)}')
             _addr = Decode_Response(addr)
             _addr = (_addr['ip'], _addr['port'])
             hs = get_hash(addr=_addr)
@@ -141,7 +141,7 @@ class AgentManager(KademliaProtocol):
     @staticmethod
     def start(port=None, port_range=(10000, 10100), first_node=False):
         ''' Connect to the kademlia network, and wait for rpc\'s '''
-        print('look in logs ;)...')
+        print('Agent-Manager-System runnnig...')
         if port is None:
             port = randint(*port_range)
         info(f'Starting on port {port}')
