@@ -18,6 +18,7 @@ from engine.utils.network import (
     Decode_Response,
     Encode_Request,
 )
+from json import loads
 from socket import socket, SO_REUSEADDR, SOL_SOCKET, SOCK_DGRAM
 
 setup_logger(name='AgentService', to_file=False)
@@ -28,7 +29,7 @@ def get_funcargs(func):
     return args[1:] if 'self' == args[0] else args
 
 
-TIMEOUT = 15
+TIMEOUT = 20
 PLATAFORM_PORT = 10000
 
 
@@ -39,7 +40,7 @@ class AgentService(Service):
         self.port = port
         self.attenders_list = []
         self.attenders_list_lock = Lock()
-        self.publish_time = 6
+        self.publish_time = 20
         self.cached_connections = {}
         Thread(target=self._whocanserveme, daemon=True).start()
         Thread(target=self._refresh_attenders, daemon=True).start()
@@ -110,7 +111,8 @@ class AgentService(Service):
             try:
                 cur_agent = agents.pop()
                 ag_info = self._agent_info(cur_agent['ip'], cur_agent['port'])
-                debug(f'trying with ,{cur_agent}, info: {ag_info}')
+                debug(f'trying with ,{cur_agent}, info: {ag_info}\n({type(ag_info)})')
+                debug(f'aguacate -->{ag_info}<-->{type(ag_info)}')
                 _info = ag_info['info']
 
                 if func_name in _info and len(_info[func_name].get('args', [])) == len(
@@ -132,7 +134,7 @@ class AgentService(Service):
                             error(f'remote function call interrupted because: {e}')
                             c.close()
             except Exception as e:
-                error(e)
+                error(f'error ocurred: {e}')
                 if agents:
                     debug('Trying with another agent')
         debug('the remote function could not be executed')
@@ -255,6 +257,11 @@ class AgentService(Service):
                         Udp_Response,
                         TIMEOUT,
                     )
+            debug(
+                f'agent_info recieved _agent_info: {agent_info}, ({type(agent_info)})'
+            )
+            agent_info = Decode_Response(agent_info)
+            debug(f'_agent_info recieved and formatted: {agent_info}')
             return agent_info
         except Exception as e:
             error(f'Unhandled Exception: {e}')
